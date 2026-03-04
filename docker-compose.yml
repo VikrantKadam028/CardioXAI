@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: xai_mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: xai_heart_db
+    networks:
+      - xai_net
+
+  backend:
+    build: ./backend
+    container_name: xai_backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/
+      - JWT_SECRET_KEY=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      - mongodb
+    networks:
+      - xai_net
+    volumes:
+      - ./backend/models:/app/models
+
+  frontend:
+    build: ./frontend
+    container_name: xai_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - xai_net
+
+networks:
+  xai_net:
+    driver: bridge
+
+volumes:
+  mongo_data:
