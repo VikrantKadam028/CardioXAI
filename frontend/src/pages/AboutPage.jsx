@@ -213,7 +213,7 @@ export default function AboutPage() {
               whileHover={{ y: -8, transition: { duration: 0.3 } }}
               className="group relative bg-white/90 backdrop-blur-xl rounded-3xl p-7 shadow-lg hover:shadow-2xl border border-blue-100/50 transition-all duration-300"
             >
-              <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${c.accent} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+              <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${c.accent} opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none`} />
               
               <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${c.accent} flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                 <c.icon size={24} className="text-white" />
@@ -311,7 +311,7 @@ export default function AboutPage() {
                 whileHover={{ y: -8 }}
                 className="group relative bg-white rounded-3xl p-7 shadow-xl hover:shadow-2xl border border-slate-100 transition-all duration-300 overflow-hidden"
               >
-                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
+                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none`} />
                 
                 {/* Profile Image */}
                 <div className="relative mb-6">
@@ -360,7 +360,7 @@ export default function AboutPage() {
                   />
                 </div>
 
-                <div className={`absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-20 rounded-full blur-3xl transition-opacity duration-500`} />
+                <div className={`absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-20 rounded-full blur-3xl transition-opacity duration-500 pointer-events-none`} />
               </motion.div>
             ))}
           </motion.div>
@@ -381,7 +381,7 @@ export default function AboutPage() {
                   SY-AIDS Branch
                 </span>
                 <span className="px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-semibold">
-                  2025-2026
+                  2024-2025
                 </span>
               </div>
             </div>
