@@ -36,14 +36,14 @@ const principles = [
   'Plain-language explanations alongside technical values',
 ]
 
-// ✅ Team Members with Images, Emails & Social Links
+// ✅ Team Members — all github/linkedin fields are full URLs
 const teamMembers = [
   {
     name: 'Vikrant Kadam',
     role: 'Lead Developer • Lead DevOps • Lead Full Stack',
     email: 'vikrant.1252010030@vit.edu',
     github: 'https://github.com/VikrantKadam028',
-    linkedin: 'vikrantkadam028',
+    linkedin: 'https://www.linkedin.com/in/vikrantkadam028',
     image: 'https://media.licdn.com/dms/image/v2/D4D03AQHpHv_qLw8YRA/profile-displayphoto-scale_400_400/B4DZvMEFsRG8Ag-/0/1768655185486?e=1774483200&v=beta&t=1vhWR4q-Ykaok5ZJ0atCb8e1Tbe6kqrnyNu1uMiqjkA',
     avatar: 'VK',
     color: 'from-blue-500 to-cyan-500'
@@ -71,9 +71,9 @@ const teamMembers = [
   {
     name: 'Janhavi Pagare',
     role: 'Frontend Developer • UX Designer',
-    email: 'https://github.com/janhvi-2403',
-    github: 'janhvi-2403',
-    linkedin: 'janhvi-pagare-1196b62b8',
+    email: 'janhavi-2403@github.com',           // ✅ fixed (was swapped with github)
+    github: 'https://github.com/janhvi-2403',   // ✅ fixed (was in email field)
+    linkedin: 'https://www.linkedin.com/in/janhvi-pagare-1196b62b8',
     image: 'https://media.licdn.com/dms/image/v2/D5603AQGXR4XlGf5_VA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1727168370273?e=1774483200&v=beta&t=bKga19UZNECRalIb0Klmy0yJ3vIKMiuLEzqMQ_rFD0M',
     avatar: 'JP',
     color: 'from-pink-500 to-rose-500'
@@ -146,7 +146,7 @@ const ProfileImage = ({ member }) => {
   )
 }
 
-// Social Link Button Component
+// ✅ SocialButton — accepts a ready-to-use href, no more URL construction
 const SocialButton = ({ href, icon: Icon, label, colorClass, hoverColorClass }) => {
   if (!href) return null
 
@@ -177,7 +177,6 @@ export default function AboutPage() {
           transition={{ duration: 0.8 }}
           className="text-center pt-12 mb-16 relative"
         >
-          {/* Animated background elements */}
           <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl animate-pulse" />
           <div className="absolute top-10 right-1/4 w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl animate-pulse delay-1000" />
           
@@ -312,16 +311,13 @@ export default function AboutPage() {
                 whileHover={{ y: -8 }}
                 className="group relative bg-white rounded-3xl p-7 shadow-xl hover:shadow-2xl border border-slate-100 transition-all duration-300 overflow-hidden"
               >
-                {/* Gradient Border Effect */}
                 <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
                 
                 {/* Profile Image */}
                 <div className="relative mb-6">
-                  <div className={`w-32 h-32 mx-auto rounded-3xl overflow-hidden shadow-2xl ring-4 ring-slate-100 group-hover:ring-blue-200 transition-all duration-300 group-hover:scale-105`}>
+                  <div className="w-32 h-32 mx-auto rounded-3xl overflow-hidden shadow-2xl ring-4 ring-slate-100 group-hover:ring-blue-200 transition-all duration-300 group-hover:scale-105">
                     <ProfileImage member={member} />
                   </div>
-                  
-                  {/* Decorative Elements */}
                   <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br ${member.color} flex items-center justify-center shadow-lg`}>
                     <Sparkles size={14} className="text-white" />
                   </div>
@@ -339,24 +335,24 @@ export default function AboutPage() {
                   </p>
                 </div>
 
-                {/* Social Links - NOW WORKING! */}
+                {/* ✅ Social Links — all hrefs are already full URLs, passed directly */}
                 <div className="flex justify-center gap-3">
                   <SocialButton
-                    href={member.github ? `https://github.com/${member.github}` : null}
+                    href={member.github || null}
                     icon={Github}
-                    label={`GitHub: ${member.github}`}
+                    label={`GitHub: ${member.name}`}
                     colorClass="bg-slate-100 text-slate-700"
                     hoverColorClass="hover:bg-slate-800 hover:text-white"
                   />
                   <SocialButton
-                    href={member.linkedin ? `https://www.linkedin.com/in/${member.linkedin}` : null}
+                    href={member.linkedin || null}
                     icon={Linkedin}
                     label={`LinkedIn: ${member.name}`}
                     colorClass="bg-slate-100 text-slate-700"
                     hoverColorClass="hover:bg-[#0A66C2] hover:text-white"
                   />
                   <SocialButton
-                    href={`mailto:${member.email}`}
+                    href={member.email ? `mailto:${member.email}` : null}
                     icon={Mail}
                     label="Send Email"
                     colorClass="bg-slate-100 text-slate-700"
@@ -364,7 +360,6 @@ export default function AboutPage() {
                   />
                 </div>
 
-                {/* Hover Glow Effect */}
                 <div className={`absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-20 rounded-full blur-3xl transition-opacity duration-500`} />
               </motion.div>
             ))}
@@ -378,7 +373,6 @@ export default function AboutPage() {
             className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30" />
-            
             <div className="relative">
               <p className="text-blue-100 text-sm mb-2 font-medium">Proudly developed at</p>
               <h3 className="text-white font-bold text-2xl mb-1">Vishwakarma Institute of Technology, Pune</h3>
@@ -387,7 +381,7 @@ export default function AboutPage() {
                   SY-AIDS Branch
                 </span>
                 <span className="px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-semibold">
-                  2024-2025
+                  2025-2026
                 </span>
               </div>
             </div>
