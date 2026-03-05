@@ -153,4 +153,8 @@ VITE_API_URL=http://localhost:5000
 
 ---
 
+## 👥 Contributors
+- Vikrant Kadam
+- Kartik Pagariya <!-- Add this line -->
+
 *Built with Flask, React, MongoDB, Logistic Regression, and real Linear SHAP XAI.*
