@@ -146,22 +146,20 @@ const ProfileImage = ({ member }) => {
   )
 }
 
-// ✅ SocialButton — accepts a ready-to-use href, no more URL construction
+// SocialButton — plain <a> tag, z-50 to sit above all overlays
 const SocialButton = ({ href, icon: Icon, label, colorClass, hoverColorClass }) => {
   if (!href) return null
 
   return (
-    <motion.a
+    <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      whileHover={{ scale: 1.15, y: -2 }}
-      whileTap={{ scale: 0.95 }}
-      className={`p-2.5 rounded-xl ${colorClass} ${hoverColorClass} transition-all duration-300 shadow-md hover:shadow-lg`}
       title={label}
+      className={`relative z-50 p-2.5 rounded-xl ${colorClass} ${hoverColorClass} transition-all duration-300 shadow-md hover:shadow-lg hover:scale-110 active:scale-95 inline-flex items-center justify-center cursor-pointer`}
     >
       <Icon size={18} className="stroke-[2.5]" />
-    </motion.a>
+    </a>
   )
 }
 
@@ -309,7 +307,7 @@ export default function AboutPage() {
                 key={member.name}
                 variants={itemVariants}
                 whileHover={{ y: -8 }}
-                className="group relative bg-white rounded-3xl p-7 shadow-xl hover:shadow-2xl border border-slate-100 transition-all duration-300 overflow-hidden"
+                className="group relative bg-white rounded-3xl p-7 shadow-xl hover:shadow-2xl border border-slate-100 transition-all duration-300"
               >
                 <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none`} />
                 
@@ -335,8 +333,8 @@ export default function AboutPage() {
                   </p>
                 </div>
 
-                {/* ✅ Social Links — all hrefs are already full URLs, passed directly */}
-                <div className="flex justify-center gap-3">
+                {/* Social Links */}
+                <div className="relative z-50 flex justify-center gap-3">
                   <SocialButton
                     href={member.github || null}
                     icon={Github}
