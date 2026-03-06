@@ -157,4 +157,7 @@ VITE_API_URL=http://localhost:5000
 - Vikrant Kadam
 - Kartik Pagariya <!-- Add this line -->
 
+## Checkout the Deployed project:-
+https://cardioxai-frontend.onrender.com
+
 *Built with Flask, React, MongoDB, Logistic Regression, and real Linear SHAP XAI.*
