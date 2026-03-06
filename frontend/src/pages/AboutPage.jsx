@@ -83,7 +83,7 @@ const teamMembers = [
     role: 'Data Analyst • Researcher',
     email: 'pranali.yelavikar25@vit.edu',
     github: 'https://github.com/pranaliyelavikar14',
-    linkedin: '',
+    linkedin: 'https://www.linkedin.com/in/pranali-yelavikar-2b3178383/',
     image: 'https://avatars.githubusercontent.com/u/235873957?v=4',
     avatar: 'PY',
     color: 'from-amber-500 to-orange-500'
@@ -161,7 +161,7 @@ const SocialButton = ({ href, icon: Icon, label, colorClass, hoverColorClass }) 
       target="_blank"
       rel="noopener noreferrer"
       title={label}
-      className={`relative z-50 p-2.5 rounded-xl ${colorClass} ${hoverColorClass} transition-all duration-300 shadow-md hover:shadow-lg hover:scale-110 active:scale-95 inline-flex items-center justify-center cursor-pointer pointer-events-auto`}
+      className={`relative z-20 p-2.5 rounded-xl ${colorClass} ${hoverColorClass} transition-all duration-300 shadow-md hover:shadow-lg hover:scale-110 active:scale-95 inline-flex items-center justify-center cursor-pointer pointer-events-auto`}
       onClick={(e) => e.stopPropagation()}
     >
       <Icon size={18} className="stroke-[2.5]" />
@@ -185,7 +185,7 @@ const TeamCard = ({ member }) => {
     >
       {/* Mentor Badge - Only shown for mentor */}
       {isMentor && (
-        <div className="absolute top-3 right-3 z-50">
+        <div className="absolute top-3 right-3 z-10">
           <div className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
             <Award size={12} />
             Mentor
@@ -196,7 +196,7 @@ const TeamCard = ({ member }) => {
       {/* Gradient overlay */}
       <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none`} />
       
-      {/* Profile Image - NO sparkle badge */}
+      {/* Profile Image */}
       <div className="relative mb-6">
         <div className={`w-32 h-32 mx-auto rounded-3xl overflow-hidden shadow-2xl ring-4 ${
           isMentor ? 'ring-amber-200' : 'ring-slate-100'
@@ -472,3 +472,5 @@ export default function AboutPage() {
     </div>
   )
 }
+
+
