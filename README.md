@@ -465,7 +465,7 @@ Always consult a qualified healthcare provider about any medical conditions or h
 **Built with ❤️ for Explainable AI in Healthcare**
 
 <p>
-<a href="https://cardioxai-frontend.onrender.com">
+<a href="https://www.cardio-xai.tech/">
 <img src="https://img.shields.io/badge/🚀_Launch_App-Click_Here-brightgreen?style=for-the-badge&logo=rocket" alt="Launch App" />
 </a>
 </p>
