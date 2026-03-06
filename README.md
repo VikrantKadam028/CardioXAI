@@ -1,6 +1,6 @@
 <div align="center">
 
-<h1>CardioXAI v2.0 — Explainable AI Heart Disease Prediction</h1>
+<h1>CardioXAI — Explainable AI Heart Disease Prediction</h1>
 <h3>Clinical Decision Support with Transparent Machine Learning</h3>
 
 <p>
