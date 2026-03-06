@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Brain, Shield, Activity, Heart, FileText, CheckCircle, Github, Linkedin, Mail, Users, ExternalLink, Sparkles } from 'lucide-react'
+import { Brain, Shield, Activity, Heart, FileText, CheckCircle, Github, Linkedin, Mail, Users, ExternalLink, Sparkles, GraduationCap, Award } from 'lucide-react'
 import { useState } from 'react'
 
 const cards = [
@@ -71,8 +71,8 @@ const teamMembers = [
   {
     name: 'Janhavi Pagare',
     role: 'Frontend Developer • UX Designer',
-    email: 'janhavi-2403@github.com',           // ✅ fixed (was swapped with github)
-    github: 'https://github.com/janhvi-2403',   // ✅ fixed (was in email field)
+    email: 'janhvi.1252010010@vit.edu',
+    github: 'https://github.com/janhvi-2403',
     linkedin: 'https://www.linkedin.com/in/janhvi-pagare-1196b62b8',
     image: 'https://media.licdn.com/dms/image/v2/D5603AQGXR4XlGf5_VA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1727168370273?e=1774483200&v=beta&t=bKga19UZNECRalIb0Klmy0yJ3vIKMiuLEzqMQ_rFD0M',
     avatar: 'JP',
@@ -90,24 +90,37 @@ const teamMembers = [
   },
 ]
 
+// 🎓 Mentor Card
+const mentor = {
+  name: 'Dr. Viomesh K. Singh',
+  role: 'Project Mentor & Guardian',
+  tagline: '"Guiding innovation at the intersection of AI and Healthcare"',
+  email: 'viomesh.singh@vit.edu',
+  linkedin: 'https://www.linkedin.com/in/viomeshsingh',
+  image: 'https://media.licdn.com/dms/image/v2/D5603AQEYrWDBmHzApg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1678582100499?e=1774483200&v=beta&t=BBptqyVi7Eq0i3S1Eoouu1uJFWWfsVa5HOwN9XU-Oy4',
+  avatar: 'VS',
+  color: 'from-amber-400 to-orange-500',
+  isMentor: true
+}
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.15,
+      staggerChildren: 0.1,
       delayChildren: 0.2
     }
   }
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.6,
+      duration: 0.5,
       ease: [0.22, 1, 0.36, 1]
     }
   }
@@ -126,27 +139,19 @@ const ProfileImage = ({ member }) => {
   }
 
   return (
-    <>
-      <motion.img
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        src={member.image}
-        alt={member.name}
-        className="w-full h-full object-cover rounded-2xl"
-        onError={() => setImageError(true)}
-      />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="absolute bottom-2 right-2 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow-lg"
-      />
-    </>
+    <motion.img
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+      src={member.image}
+      alt={member.name}
+      className="w-full h-full object-cover rounded-2xl"
+      onError={() => setImageError(true)}
+    />
   )
 }
 
-// SocialButton — plain <a> tag, z-50 to sit above all overlays
+// SocialButton — clickable links with z-50
 const SocialButton = ({ href, icon: Icon, label, colorClass, hoverColorClass }) => {
   if (!href) return null
 
@@ -156,27 +161,122 @@ const SocialButton = ({ href, icon: Icon, label, colorClass, hoverColorClass }) 
       target="_blank"
       rel="noopener noreferrer"
       title={label}
-      className={`relative z-50 p-2.5 rounded-xl ${colorClass} ${hoverColorClass} transition-all duration-300 shadow-md hover:shadow-lg hover:scale-110 active:scale-95 inline-flex items-center justify-center cursor-pointer`}
+      className={`relative z-50 p-2.5 rounded-xl ${colorClass} ${hoverColorClass} transition-all duration-300 shadow-md hover:shadow-lg hover:scale-110 active:scale-95 inline-flex items-center justify-center cursor-pointer pointer-events-auto`}
+      onClick={(e) => e.stopPropagation()}
     >
       <Icon size={18} className="stroke-[2.5]" />
     </a>
   )
 }
 
+// Team Card Component
+const TeamCard = ({ member }) => {
+  const isMentor = member.isMentor || false
+  
+  return (
+    <motion.div
+      variants={itemVariants}
+      whileHover={{ y: -8, scale: 1.01 }}
+      className={`relative bg-white rounded-3xl p-7 shadow-xl hover:shadow-2xl border transition-all duration-300 overflow-hidden ${
+        isMentor 
+          ? 'border-amber-300 ring-4 ring-amber-100 bg-gradient-to-br from-amber-50/50 to-orange-50/50' 
+          : 'border-slate-100 hover:border-blue-200'
+      }`}
+    >
+      {/* Mentor Badge - Only shown for mentor */}
+      {isMentor && (
+        <div className="absolute top-3 right-3 z-50">
+          <div className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
+            <Award size={12} />
+            Mentor
+          </div>
+        </div>
+      )}
+
+      {/* Gradient overlay */}
+      <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none`} />
+      
+      {/* Profile Image - NO sparkle badge */}
+      <div className="relative mb-6">
+        <div className={`w-32 h-32 mx-auto rounded-3xl overflow-hidden shadow-2xl ring-4 ${
+          isMentor ? 'ring-amber-200' : 'ring-slate-100'
+        } transition-all duration-300`}>
+          <ProfileImage member={member} />
+        </div>
+        {/* Sparkle badge completely removed */}
+      </div>
+
+      {/* Member Info */}
+      <div className="text-center mb-6">
+        <h3 className={`font-bold text-xl mb-2 ${isMentor ? 'text-amber-900' : 'text-slate-900'}`}>
+          {member.name}
+        </h3>
+        <p className={`text-sm font-medium mb-2 ${isMentor ? 'text-amber-700' : 'text-slate-600'}`}>
+          {member.role}
+        </p>
+        {isMentor && member.tagline && (
+          <p className="text-amber-600 text-xs italic px-2 py-1 bg-amber-100/50 rounded-lg mb-2">
+            {member.tagline}
+          </p>
+        )}
+        <p className="text-slate-400 text-xs mt-2 flex items-center justify-center gap-1">
+          <Mail size={12} />
+          {member.email}
+        </p>
+      </div>
+
+      {/* Social Links */}
+      <div className="relative z-50 flex justify-center gap-3">
+        {!isMentor && member.github && (
+          <SocialButton
+            href={member.github}
+            icon={Github}
+            label={`GitHub: ${member.name}`}
+            colorClass="bg-slate-100 text-slate-700"
+            hoverColorClass="hover:bg-slate-800 hover:text-white"
+          />
+        )}
+        {member.linkedin && (
+          <SocialButton
+            href={member.linkedin}
+            icon={Linkedin}
+            label={`LinkedIn: ${member.name}`}
+            colorClass="bg-slate-100 text-slate-700"
+            hoverColorClass="hover:bg-[#0A66C2] hover:text-white"
+          />
+        )}
+        <SocialButton
+          href={`mailto:${member.email}`}
+          icon={Mail}
+          label="Send Email"
+          colorClass="bg-slate-100 text-slate-700"
+          hoverColorClass="hover:bg-blue-500 hover:text-white"
+        />
+      </div>
+
+      {/* Hover glow */}
+      <div className={`absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-20 rounded-full blur-3xl transition-opacity duration-500 pointer-events-none`} />
+    </motion.div>
+  )
+}
+
 export default function AboutPage() {
+  // Combine team members with mentor
+  const allMembers = [...teamMembers, mentor]
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 pt-16 pb-20 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
 
-        {/* Hero Section with Animated Background */}
+        {/* Hero Section */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.8 }}
           className="text-center pt-12 mb-16 relative"
         >
-          <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute top-10 right-1/4 w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl animate-pulse pointer-events-none" />
+          <div className="absolute top-10 right-1/4 w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none" />
           
           <motion.div
             initial={{ scale: 0 }}
@@ -230,19 +330,12 @@ export default function AboutPage() {
           transition={{ delay: 0.6, duration: 0.7 }}
           className="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-950 rounded-3xl p-10 sm:p-12 text-center mb-16 relative overflow-hidden"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.08)_0%,transparent_55%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(59,130,246,0.15)_0%,transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.08)_0%,transparent_55%)] pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(59,130,246,0.15)_0%,transparent_50%)] pointer-events-none" />
           
           <motion.div
-            animate={{ 
-              scale: [1, 1.1, 1],
-              rotate: [0, 5, -5, 0]
-            }}
-            transition={{ 
-              duration: 3,
-              repeat: Infinity,
-              repeatDelay: 2
-            }}
+            animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+            transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
             className="relative mb-6"
           >
             <Heart size={48} className="text-blue-300 mx-auto fill-blue-400/20" />
@@ -272,7 +365,7 @@ export default function AboutPage() {
           </div>
         </motion.div>
 
-        {/* Team Section */}
+        {/* Team Section - Original Simple Grid Layout */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -296,70 +389,15 @@ export default function AboutPage() {
             </p>
           </div>
 
+          {/* Simple Grid Layout - 6 cards total (5 team + 1 mentor) */}
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-10"
           >
-            {teamMembers.map((member) => (
-              <motion.div
-                key={member.name}
-                variants={itemVariants}
-                whileHover={{ y: -8 }}
-                className="group relative bg-white rounded-3xl p-7 shadow-xl hover:shadow-2xl border border-slate-100 transition-all duration-300"
-              >
-                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none`} />
-                
-                {/* Profile Image */}
-                <div className="relative mb-6">
-                  <div className="w-32 h-32 mx-auto rounded-3xl overflow-hidden shadow-2xl ring-4 ring-slate-100 group-hover:ring-blue-200 transition-all duration-300 group-hover:scale-105">
-                    <ProfileImage member={member} />
-                  </div>
-                  <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br ${member.color} flex items-center justify-center shadow-lg`}>
-                    <Sparkles size={14} className="text-white" />
-                  </div>
-                </div>
-
-                {/* Member Info */}
-                <div className="text-center mb-6">
-                  <h3 className="font-bold text-xl text-slate-900 mb-2 group-hover:text-blue-700 transition-colors">
-                    {member.name}
-                  </h3>
-                  <p className="text-slate-600 text-sm font-medium">{member.role}</p>
-                  <p className="text-slate-400 text-xs mt-2 flex items-center justify-center gap-1">
-                    <Mail size={12} />
-                    {member.email}
-                  </p>
-                </div>
-
-                {/* Social Links */}
-                <div className="relative z-50 flex justify-center gap-3">
-                  <SocialButton
-                    href={member.github || null}
-                    icon={Github}
-                    label={`GitHub: ${member.name}`}
-                    colorClass="bg-slate-100 text-slate-700"
-                    hoverColorClass="hover:bg-slate-800 hover:text-white"
-                  />
-                  <SocialButton
-                    href={member.linkedin || null}
-                    icon={Linkedin}
-                    label={`LinkedIn: ${member.name}`}
-                    colorClass="bg-slate-100 text-slate-700"
-                    hoverColorClass="hover:bg-[#0A66C2] hover:text-white"
-                  />
-                  <SocialButton
-                    href={member.email ? `mailto:${member.email}` : null}
-                    icon={Mail}
-                    label="Send Email"
-                    colorClass="bg-slate-100 text-slate-700"
-                    hoverColorClass="hover:bg-blue-500 hover:text-white"
-                  />
-                </div>
-
-                <div className={`absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-to-br ${member.color} opacity-0 group-hover:opacity-20 rounded-full blur-3xl transition-opacity duration-500 pointer-events-none`} />
-              </motion.div>
+            {allMembers.map((member) => (
+              <TeamCard key={member.name} member={member} />
             ))}
           </motion.div>
 
@@ -368,9 +406,9 @@ export default function AboutPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 1.2 }}
-            className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden"
+            className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden mt-12"
           >
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30" />
+            <div className="absolute inset-0 bg-[url('image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30 pointer-events-none" />
             <div className="relative">
               <p className="text-blue-100 text-sm mb-2 font-medium">Proudly developed at</p>
               <h3 className="text-white font-bold text-2xl mb-1">Vishwakarma Institute of Technology, Pune</h3>
@@ -379,7 +417,7 @@ export default function AboutPage() {
                   SY-AIDS Branch
                 </span>
                 <span className="px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-semibold">
-                  2024-2025
+                  2025-2026
                 </span>
               </div>
             </div>
@@ -408,7 +446,7 @@ export default function AboutPage() {
           </div>
         </motion.div>
 
-        {/* Footer CTA */}
+        {/* Footer CTA - Updated Domain */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -417,7 +455,7 @@ export default function AboutPage() {
         >
           <p className="text-slate-500 text-sm mb-4">Interested in contributing or learning more?</p>
           <motion.a
-            href="https://github.com/VikrantKadam028/CardioXAI"
+            href="https://www.cardio-xai.tech"
             target="_blank"
             rel="noopener noreferrer"
             whileHover={{ scale: 1.05 }}
@@ -425,7 +463,7 @@ export default function AboutPage() {
             className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300"
           >
             <Github size={22} />
-            View on GitHub
+            Visit cardio-xai.tech
             <ExternalLink size={18} />
           </motion.a>
         </motion.div>
