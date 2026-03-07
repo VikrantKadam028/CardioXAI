@@ -27,8 +27,7 @@ GROQ_API_KEY = os.environ.get(
     "GROQ_API_KEY",
     "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"
 )
-# llama-3.3-70b-versatile: fast, accurate, always available on Groq free tier
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "qwen/qwen3-32b"
 
 # ── Lazy singletons ───────────────────────────
 _groq_client = None
@@ -67,31 +66,12 @@ def _extract_docx(file_bytes: bytes) -> str:
 
 
 def extract_text(file_bytes: bytes, filename: str) -> str:
-    fname = (filename or "report.pdf").lower()
-    # Strip query strings or extra info mobile browsers sometimes append
-    fname = fname.split("?")[0].split(";")[0].strip()
-    ext   = fname.rsplit(".", 1)[-1] if "." in fname else ""
-
-    # Sniff PDF magic bytes if extension is missing or ambiguous
-    is_pdf = (ext == "pdf") or file_bytes[:4] == b"%PDF"
-
-    if is_pdf:
+    ext = filename.lower().rsplit(".", 1)[-1]
+    if ext == "pdf":
         return _extract_pdf(file_bytes)
     elif ext in ("docx", "doc"):
         return _extract_docx(file_bytes)
-    else:
-        # Last resort: try PDF first (most common on mobile), then docx
-        try:
-            text = _extract_pdf(file_bytes)
-            if len(text.strip()) > 20:
-                return text
-        except Exception:
-            pass
-        try:
-            return _extract_docx(file_bytes)
-        except Exception:
-            pass
-        raise ValueError(f"Could not parse file '{filename}'. Ensure it is a valid PDF or DOCX.")
+    raise ValueError(f"Unsupported file type: .{ext}. Please upload PDF or DOCX.")
 
 
 # ── Pure sklearn TF-IDF Retriever ─────────────
@@ -217,20 +197,16 @@ IMPORTANT: Return ONLY the raw JSON object. No markdown, no code fences, no expl
 def extract_with_llm(context: str) -> dict:
     client = _get_groq()
 
-    try:
-        completion = client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user",   "content": f"Extract all cardiac values from this medical report:\n\n{context[:7000]}"},
-            ],
-            temperature=0.1,
-            max_tokens=1024,
-            stream=False,
-        )
-    except Exception as e:
-        logger.error(f"[RAG] Groq API call failed: {e}")
-        raise ValueError(f"LLM service unavailable: {str(e)[:120]}. Check GROQ_API_KEY and model availability.")
+    completion = client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user",   "content": f"Extract all cardiac values from this medical report:\n\n{context[:7000]}"},
+        ],
+        temperature=0.1,
+        max_tokens=2048,
+        stream=False,
+    )
 
     raw = completion.choices[0].message.content.strip()
     logger.info(f"[RAG] LLM response (first 300): {raw[:300]}")
