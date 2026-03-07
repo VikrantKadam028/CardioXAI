@@ -64,7 +64,7 @@ app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "xai-heart-super
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
 jwt = JWTManager(app)
 
-MONGO_URI = os.getenv("MONGO_URI")
+MONGO_URI = "mongodb+srv://vikrantkk2889:clZRES2qrls0b4n9@cluster0.yqonlou.mongodb.net/"
 client = MongoClient(MONGO_URI)
 db = client["xai_heart_db"]
 users_col = db["users"]
