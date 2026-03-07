@@ -60,7 +60,7 @@ CORS(app,
      max_age=86400)
 bcrypt = Bcrypt(app)
 
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "xai-heart-super-secret-key-2024")
+app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "xai-heart-super-secret-keys-2024")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
 jwt = JWTManager(app)
 
