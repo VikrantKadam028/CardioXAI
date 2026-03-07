@@ -22,8 +22,8 @@ function RiskBadge({ level }) {
 
 function StatCard({ icon: Icon, label, value, color }) {
   const gradients = {
-    blue:  'from-blue-500 to-blue-700',
-    red:   'from-red-400 to-rose-600',
+    blue: 'from-blue-500 to-blue-700',
+    red: 'from-red-400 to-rose-600',
     green: 'from-emerald-400 to-green-600',
     amber: 'from-amber-400 to-orange-500',
   }
@@ -41,16 +41,16 @@ function StatCard({ icon: Icon, label, value, color }) {
 }
 
 export default function DashboardPage() {
-  const [tab,          setTab]          = useState('overview')
-  const [reports,      setReports]      = useState([])
-  const [stats,        setStats]        = useState(null)
+  const [tab, setTab] = useState('overview')
+  const [reports, setReports] = useState([])
+  const [stats, setStats] = useState(null)
   const [reportsLoading, setReportsLoading] = useState(true)
-  const [editMode,     setEditMode]     = useState(false)
-  const [profileForm,  setProfileForm]  = useState({})
-  const [saving,       setSaving]       = useState(false)
-  const [pdfLoading,   setPdfLoading]   = useState(null) // report _id
-  const { user, logout, updateUser }    = useAuth()
-  const navigate                        = useNavigate()
+  const [editMode, setEditMode] = useState(false)
+  const [profileForm, setProfileForm] = useState({})
+  const [saving, setSaving] = useState(false)
+  const [pdfLoading, setPdfLoading] = useState(null) // report _id
+  const { user, logout, updateUser } = useAuth()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (user) setProfileForm({
@@ -65,42 +65,28 @@ export default function DashboardPage() {
 
   const fetchReports = async () => {
     setReportsLoading(true)
-    try { const r = await axios.get(`${API}/api/user/reports`); setReports(r.data.reports) } catch {}
+    try { const r = await axios.get(`${API}/api/user/reports`); setReports(r.data.reports) } catch { }
     setReportsLoading(false)
   }
 
   const fetchStats = async () => {
-    try { const r = await axios.get(`${API}/api/user/stats`); setStats(r.data) } catch {}
+    try { const r = await axios.get(`${API}/api/user/stats`); setStats(r.data) } catch { }
   }
 
-  const handleDownloadPdf = async (report) => {
-    setPdfLoading(report._id)
-    try {
-      const res = await axios.post(`${API}/api/report/pdf`, {
-        ...report.inputData,
-        patientInfo: { name: `${user.firstName} ${user.lastName}` }
-      }, { timeout: 30000 })
-      const raw = atob(res.data.pdf)
-      const bytes = new Uint8Array(raw.length)
-      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i)
-      const blob = new Blob([bytes], { type: 'application/pdf' })
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a'); a.href = url; a.download = res.data.filename || 'report.pdf'
-      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
-    } catch {}
-    setPdfLoading(null)
+  const handleDownloadPdf = (report) => {
+    navigate(`/dashboard/reports/${report._id}`)
   }
 
   const saveProfile = async () => {
     setSaving(true)
-    try { await axios.put(`${API}/api/auth/update`, profileForm); updateUser(profileForm); setEditMode(false) } catch {}
+    try { await axios.put(`${API}/api/auth/update`, profileForm); updateUser(profileForm); setEditMode(false) } catch { }
     setSaving(false)
   }
 
   const navItems = [
-    { id: 'overview', label: 'Overview',   icon: BarChart3 },
-    { id: 'reports',  label: 'My Reports', icon: FileText },
-    { id: 'profile',  label: 'Profile',    icon: User },
+    { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'reports', label: 'My Reports', icon: FileText },
+    { id: 'profile', label: 'Profile', icon: User },
   ]
 
   const trendData = stats?.trend?.map(t => ({ date: t.date, risk: Math.round(t.probability * 100) })) || []
@@ -137,9 +123,8 @@ export default function DashboardPage() {
         <nav className="flex-1 px-4 py-4 space-y-1">
           {navItems.map(item => (
             <button key={item.id} onClick={() => setTab(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                tab === item.id ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${tab === item.id ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
             >
               <item.icon size={16} /> {item.label}
             </button>
@@ -196,10 +181,10 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-                  <StatCard icon={FileText}      label="Total Assessments" value={stats?.total    || 0}                        color="blue"  />
-                  <StatCard icon={Activity}      label="Avg Risk Score"    value={stats?.avgRisk  ? `${stats.avgRisk}%` : '—'} color="blue"  />
-                  <StatCard icon={AlertTriangle} label="High Risk"         value={stats?.highRisk || 0}                        color="red"   />
-                  <StatCard icon={CheckCircle}   label="Low Risk"          value={stats?.lowRisk  || 0}                        color="green" />
+                  <StatCard icon={FileText} label="Total Assessments" value={stats?.total || 0} color="blue" />
+                  <StatCard icon={Activity} label="Avg Risk Score" value={stats?.avgRisk ? `${stats.avgRisk}%` : '—'} color="blue" />
+                  <StatCard icon={AlertTriangle} label="High Risk" value={stats?.highRisk || 0} color="red" />
+                  <StatCard icon={CheckCircle} label="Low Risk" value={stats?.lowRisk || 0} color="green" />
                 </div>
 
                 {trendData.length > 1 && (
@@ -212,13 +197,13 @@ export default function DashboardPage() {
                       <AreaChart data={trendData}>
                         <defs>
                           <linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.15} />
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
                             <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                         <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8', fontFamily: 'Poppins' }} />
-                        <YAxis domain={[0,100]} tick={{ fontSize: 11, fill: '#94a3b8', fontFamily: 'Poppins' }} tickFormatter={v => `${v}%`} />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#94a3b8', fontFamily: 'Poppins' }} tickFormatter={v => `${v}%`} />
                         <Tooltip formatter={v => [`${v}%`, 'Risk']} contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontFamily: 'Poppins', fontSize: 12 }} />
                         <Area type="monotone" dataKey="risk" stroke="#2563eb" strokeWidth={2.5} fill="url(#rg)" dot={{ fill: '#2563eb', r: 4 }} />
                       </AreaChart>
@@ -246,9 +231,8 @@ export default function DashboardPage() {
                     <div className="divide-y divide-slate-50">
                       {reports.slice(0, 5).map(r => (
                         <div key={r._id} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 hover:bg-slate-50 transition-colors">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                            r.riskLevel === 'high' ? 'bg-red-100' : r.riskLevel === 'moderate' ? 'bg-amber-100' : 'bg-green-100'
-                          }`}>
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${r.riskLevel === 'high' ? 'bg-red-100' : r.riskLevel === 'moderate' ? 'bg-amber-100' : 'bg-green-100'
+                            }`}>
                             <Heart size={16} className={r.riskLevel === 'high' ? 'text-red-500' : r.riskLevel === 'moderate' ? 'text-amber-500' : 'text-green-500'} />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -356,11 +340,11 @@ export default function DashboardPage() {
                   {!editMode
                     ? <button onClick={() => setEditMode(true)} className="btn btn-outline btn-sm"><Edit3 size={14} /> Edit</button>
                     : <div className="flex gap-2">
-                        <button onClick={() => setEditMode(false)} className="btn btn-ghost btn-sm"><X size={14} /> Cancel</button>
-                        <button onClick={saveProfile} disabled={saving} className="btn btn-primary btn-sm">
-                          {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />} Save
-                        </button>
-                      </div>
+                      <button onClick={() => setEditMode(false)} className="btn btn-ghost btn-sm"><X size={14} /> Cancel</button>
+                      <button onClick={saveProfile} disabled={saving} className="btn btn-primary btn-sm">
+                        {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />} Save
+                      </button>
+                    </div>
                   }
                 </div>
 
@@ -374,7 +358,7 @@ export default function DashboardPage() {
                     <p className="text-blue-200 text-sm truncate">{user?.email}</p>
                     <div className="flex gap-3 mt-1.5">
                       {user?.bloodGroup && <span className="flex items-center gap-1 text-xs text-blue-200"><Droplets size={11} /> {user.bloodGroup}</span>}
-                      {user?.phone      && <span className="flex items-center gap-1 text-xs text-blue-200"><Phone size={11} /> {user.phone}</span>}
+                      {user?.phone && <span className="flex items-center gap-1 text-xs text-blue-200"><Phone size={11} /> {user.phone}</span>}
                     </div>
                   </div>
                 </div>
@@ -386,8 +370,8 @@ export default function DashboardPage() {
                     <div className="space-y-4">
                       {[
                         { label: 'First Name', key: 'firstName', type: 'text' },
-                        { label: 'Last Name',  key: 'lastName',  type: 'text' },
-                        { label: 'Phone',      key: 'phone',     type: 'tel'  },
+                        { label: 'Last Name', key: 'lastName', type: 'text' },
+                        { label: 'Phone', key: 'phone', type: 'tel' },
                         { label: 'Date of Birth', key: 'dateOfBirth', type: 'date' },
                       ].map(f => (
                         <div key={f.key}>
@@ -409,11 +393,11 @@ export default function DashboardPage() {
                         <label className="block text-xs font-semibold text-blue-700 mb-1.5">Gender</label>
                         {editMode
                           ? <select value={profileForm.gender || ''} onChange={e => setProfileForm(p => ({ ...p, gender: e.target.value }))} className="field">
-                              <option value="">Not specified</option>
-                              <option value="male">Male</option>
-                              <option value="female">Female</option>
-                              <option value="other">Other</option>
-                            </select>
+                            <option value="">Not specified</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                          </select>
                           : <p className="text-sm text-slate-700 py-1.5 capitalize">{user?.gender || <span className="text-slate-300">Not set</span>}</p>
                         }
                       </div>
@@ -421,9 +405,9 @@ export default function DashboardPage() {
                         <label className="block text-xs font-semibold text-blue-700 mb-1.5">Blood Group</label>
                         {editMode
                           ? <select value={profileForm.bloodGroup || ''} onChange={e => setProfileForm(p => ({ ...p, bloodGroup: e.target.value }))} className="field">
-                              <option value="">Unknown</option>
-                              {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g => <option key={g} value={g}>{g}</option>)}
-                            </select>
+                            <option value="">Unknown</option>
+                            {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(g => <option key={g} value={g}>{g}</option>)}
+                          </select>
                           : <p className="text-sm text-slate-700 py-1.5">{user?.bloodGroup || <span className="text-slate-300">Not set</span>}</p>
                         }
                       </div>
@@ -442,7 +426,7 @@ export default function DashboardPage() {
                   <h3 className="font-semibold text-xs text-slate-500 uppercase tracking-wider mb-4">Account Summary</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {[
-                      { v: user?.reportCount || 0,                         l: 'Total Reports' },
+                      { v: user?.reportCount || 0, l: 'Total Reports' },
                       { v: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—', l: 'Member Since' },
                       { v: reports.filter(r => r.riskLevel === 'low').length, l: 'Low Risk Reports' },
                     ].map(item => (

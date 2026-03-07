@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 import axios from 'axios'
 import { ArrowLeft, Download, Calendar, AlertTriangle, CheckCircle, Activity, Brain, Loader } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -15,12 +17,13 @@ const LABELS = {
 }
 
 export default function ReportDetailPage() {
-  const { id }              = useParams()
+  const { id } = useParams()
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
   const [pdfLoading, setPdfLoading] = useState(false)
-  const { user }            = useAuth()
-  const navigate            = useNavigate()
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const reportRef = useRef(null)
 
   useEffect(() => {
     axios.get(`${API}/api/user/reports/${id}`)
@@ -30,22 +33,31 @@ export default function ReportDetailPage() {
   }, [id])
 
   const downloadPdf = async () => {
-    if (!report || pdfLoading) return
+    if (!reportRef.current || pdfLoading) return
     setPdfLoading(true)
     try {
-      const res = await axios.post(`${API}/api/report/pdf`, {
-        ...report.inputData,
-        patientInfo: { name: `${user?.firstName} ${user?.lastName}` }
-      }, { timeout: 30000 })
-      const raw = atob(res.data.pdf)
-      const bytes = new Uint8Array(raw.length)
-      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i)
-      const blob = new Blob([bytes], { type: 'application/pdf' })
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a'); a.href = url; a.download = res.data.filename || 'report.pdf'
-      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#f8fafc',
+      })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const pageW = pdf.internal.pageSize.getWidth()
+      const pageH = pdf.internal.pageSize.getHeight()
+      const imgH = (canvas.height * pageW) / canvas.width
+
+      let y = 0
+      while (y < imgH) {
+        if (y > 0) pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, -y, pageW, imgH)
+        y += pageH
+      }
+      pdf.save(`cardioxai-report-${Date.now()}.pdf`)
     } catch (e) {
-      alert(e?.response?.data?.error || 'PDF generation failed.')
+      alert('PDF generation failed. Please try again.')
+      console.error(e)
     }
     setPdfLoading(false)
   }
@@ -57,18 +69,18 @@ export default function ReportDetailPage() {
   )
   if (!report) return null
 
-  const pct   = Math.round(report.probability * 100)
+  const pct = Math.round(report.probability * 100)
   const level = report.riskLevel
 
   const bannerBg = level === 'high'
     ? 'from-red-500 to-rose-700'
     : level === 'moderate'
-    ? 'from-amber-400 to-orange-600'
-    : 'from-emerald-500 to-green-700'
+      ? 'from-amber-400 to-orange-600'
+      : 'from-emerald-500 to-green-700'
 
   return (
     <div className="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 pt-20">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto" ref={reportRef}>
 
         {/* Top bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
@@ -108,11 +120,11 @@ export default function ReportDetailPage() {
               {report.inputData && Object.entries(report.inputData)
                 .filter(([k]) => k !== 'patientNote')
                 .map(([k, v]) => (
-                <div key={k} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-                  <span className="text-xs text-slate-500">{LABELS[k] || k}</span>
-                  <span className="text-xs font-semibold text-blue-950 font-mono">{v}</span>
-                </div>
-              ))}
+                  <div key={k} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                    <span className="text-xs text-slate-500">{LABELS[k] || k}</span>
+                    <span className="text-xs font-semibold text-blue-950 font-mono">{v}</span>
+                  </div>
+                ))}
             </div>
           </div>
 
