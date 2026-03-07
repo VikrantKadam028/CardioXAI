@@ -1,9 +1,6 @@
 import os
 import io
 import base64
-import warnings
-warnings.filterwarnings('ignore', message='.*InsecureKeyLengthWarning.*')
-warnings.filterwarnings('ignore', category=DeprecationWarning)
 import numpy as np
 import pandas as pd
 import joblib
@@ -63,11 +60,7 @@ CORS(app,
      max_age=86400)
 bcrypt = Bcrypt(app)
 
-_jwt_key = os.environ.get("JWT_SECRET_KEY", "xai-heart-super-secret-key-2024!!")
-# Pad to minimum 32 bytes required by PyJWT for HS256
-if len(_jwt_key.encode()) < 32:
-    _jwt_key = _jwt_key.ljust(32, "!")
-app.config["JWT_SECRET_KEY"] = _jwt_key
+app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "xai-heart-super-secret-keys-2024")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
 jwt = JWTManager(app)
 
@@ -271,561 +264,456 @@ def generate_clinical_explanation(input_dict, shap_vector, prob):
 
 
 # ──────────────────────────────────────────────
-# PDF Report Generator — Professional Canvas Template
+# PDF Report Generator  — Polished Template
 # ──────────────────────────────────────────────
 
-import io, base64, math
-from datetime import datetime
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib import colors
-
-# ── Register Poppins ──────────────────────────────────────────────────────
-_FONT_DIR = "/usr/share/fonts/truetype/google-fonts"
-_FONTS_REGISTERED = False
-def _register_fonts():
-    global _FONTS_REGISTERED
-    if _FONTS_REGISTERED:
-        return
-    import os, sys
-    mapping = {
-        "Poppins":          "Poppins-Regular.ttf",
-        "Poppins-Bold":     "Poppins-Bold.ttf",
-        "Poppins-SemiBold": "Poppins-Medium.ttf",
-        "Poppins-Light":    "Poppins-Light.ttf",
-        "Poppins-Italic":   "Poppins-Italic.ttf",
-    }
-    # Search order: local fonts/ dir, Linux system, Windows system
-    backend_dir = os.path.dirname(os.path.abspath(__file__))
-    windows_font_dirs = [
-        os.path.join(os.environ.get("WINDIR","C:\Windows"), "Fonts"),
-        os.path.join(os.environ.get("LOCALAPPDATA",""), "Microsoft","Windows","Fonts"),
-    ]
-    search_dirs = [
-        os.path.join(backend_dir, "fonts"),
-        _FONT_DIR,
-    ] + windows_font_dirs
-    for name, fname in mapping.items():
-        registered = False
-        for d in search_dirs:
-            path = os.path.join(d, fname)
-            if os.path.exists(path):
-                try:
-                    pdfmetrics.registerFont(TTFont(name, path))
-                    registered = True
-                    break
-                except Exception:
-                    continue
-        if not registered:
-            # Fallback to Helvetica so PDF still generates
-            pass
-    _FONTS_REGISTERED = True
-
-# ── Colour Palette ────────────────────────────────────────────────────────
-NAVY    = colors.HexColor("#0B1F45")
-BLUE    = colors.HexColor("#1A56DB")
-LBLUE   = colors.HexColor("#EFF6FF")
-LBLUE2  = colors.HexColor("#DBEAFE")
-TEAL    = colors.HexColor("#0E7490")
-LTEAL   = colors.HexColor("#ECFEFF")
-RED     = colors.HexColor("#DC2626")
-LRED    = colors.HexColor("#FEF2F2")
-ORANGE  = colors.HexColor("#D97706")
-LORANGE = colors.HexColor("#FFFBEB")
-GREEN   = colors.HexColor("#16A34A")
-LGREEN  = colors.HexColor("#F0FDF4")
-SLATE   = colors.HexColor("#64748B")
-LGRAY   = colors.HexColor("#F1F5F9")
-LGRAY2  = colors.HexColor("#E2E8F0")
-DTEXT   = colors.HexColor("#1E293B")
-MTEXT   = colors.HexColor("#475569")
-WHITE   = colors.white
-
-# ── Canvas helpers ────────────────────────────────────────────────────────
-def rgb(c):
-    return c.red, c.green, c.blue
-
-def filled_rect(cv, x, y, w, h, fill, radius=0, stroke_color=None, stroke_width=0.5):
-    cv.saveState()
-    cv.setFillColor(fill)
-    if stroke_color:
-        cv.setStrokeColor(stroke_color)
-        cv.setLineWidth(stroke_width)
-    if radius > 0:
-        cv.roundRect(x, y, w, h, radius, stroke=1 if stroke_color else 0, fill=1)
-    else:
-        cv.rect(x, y, w, h, stroke=1 if stroke_color else 0, fill=1)
-    cv.restoreState()
-
-def draw_text(cv, x, y, text, font, size, color=DTEXT, align="left", max_width=None):
-    cv.saveState()
-    cv.setFont(font, size)
-    cv.setFillColor(color)
-    if max_width:
-        # Truncate with ellipsis if too wide
-        while cv.stringWidth(text, font, size) > max_width and len(text) > 4:
-            text = text[:-4] + "..."
-    if align == "center":
-        cv.drawCentredString(x, y, text)
-    elif align == "right":
-        cv.drawRightString(x, y, text)
-    else:
-        cv.drawString(x, y, text)
-    cv.restoreState()
-
-def draw_wrapped(cv, x, y, text, font, size, color, max_width, line_height, max_lines=99):
-    """Draw word-wrapped text, returns final y after last line."""
-    cv.saveState()
-    cv.setFont(font, size)
-    cv.setFillColor(color)
-    words = text.split()
-    line, lines = "", []
-    for w in words:
-        test = (line + " " + w).strip()
-        if cv.stringWidth(test, font, size) <= max_width:
-            line = test
-        else:
-            if line:
-                lines.append(line)
-            line = w
-    if line:
-        lines.append(line)
-    for i, l in enumerate(lines[:max_lines]):
-        cv.drawString(x, y - i * line_height, l)
-    cv.restoreState()
-    return y - (min(len(lines), max_lines) - 1) * line_height
-
-def hline(cv, x, y, w, color=LGRAY2, thickness=0.5):
-    cv.saveState()
-    cv.setStrokeColor(color)
-    cv.setLineWidth(thickness)
-    cv.line(x, y, x + w, y)
-    cv.restoreState()
-
-def section_header(cv, x, y, w, label, accent=BLUE):
-    """Draw a section title with accent bar."""
-    filled_rect(cv, x, y + 2, 3, 16, accent)
-    draw_text(cv, x + 9, y + 4, label, "Poppins-Bold", 10.5, NAVY)
-    hline(cv, x, y - 1, w, LGRAY2, 0.6)
-    return y - 6
-
-# ── Field display helpers ─────────────────────────────────────────────────
-def _thal_label(v):
-    return {3:"Normal", 6:"Fixed Defect", 7:"Reversible Defect"}.get(int(v), f"Value {int(v)}")
+# ── Lookup helpers (safe — no IndexError) ─────────────────────────────────
 def _cp_label(v):
-    return {0:"Typical Angina", 1:"Atypical Angina", 2:"Non-anginal Pain", 3:"Asymptomatic"}.get(int(v), "—")
+    return {0:"Typical Angina",1:"Atypical Angina",2:"Non-anginal Pain",3:"Asymptomatic"}.get(int(v),"Unknown")
+
+def _sex_label(v):
+    return "Male" if int(v)==1 else "Female"
+
 def _restecg_label(v):
-    return {0:"Normal", 1:"ST-T Abnormality", 2:"LV Hypertrophy"}.get(int(v), "—")
+    return {0:"Normal",1:"ST-T Wave Abnormality",2:"LV Hypertrophy"}.get(int(v),"Unknown")
+
 def _slope_label(v):
-    return {1:"Upsloping", 2:"Flat", 3:"Downsloping"}.get(int(v), "—")
+    return {1:"Upsloping",2:"Flat",3:"Downsloping"}.get(int(v),"Unknown")
 
-# ── Rounded progress bar ──────────────────────────────────────────────────
-def progress_bar(cv, x, y, w, h, pct, fill_color, bg_color=LGRAY2, radius=3):
-    filled_rect(cv, x, y, w, h, bg_color, radius)
-    bar_w = max(radius * 2, w * min(pct, 1.0))
-    filled_rect(cv, x, y, bar_w, h, fill_color, radius)
+def _thal_label(v):
+    # Valid values: 3=Normal, 6=Fixed Defect, 7=Reversible Defect
+    return {3:"Normal",6:"Fixed Defect",7:"Reversible Defect"}.get(int(v), f"Value {int(v)}")
 
-# ═════════════════════════════════════════════════════════════════════════════
-# MAIN REPORT FUNCTION
-# ═════════════════════════════════════════════════════════════════════════════
 def generate_pdf_report(input_dict, prob, shap_vector, explanation, shap_chart_b64, patient_info=None):
-    _register_fonts()
-
     buf = io.BytesIO()
-    W_pt, H_pt = A4          # 595.27 x 841.89
-    ML, MR = 36, 36          # left/right margins
-    CW = W_pt - ML - MR      # content width = 523.27
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+                            rightMargin=1.6*cm, leftMargin=1.6*cm,
+                            topMargin=1.2*cm, bottomMargin=1.5*cm)
 
-    cv = canvas.Canvas(buf, pagesize=A4)
-    cv.setTitle("CardioXAI Heart Disease Risk Assessment Report")
+    # ── Colour palette ─────────────────────────
+    C = {
+        "navy":    colors.HexColor("#0f2d5e"),
+        "blue":    colors.HexColor("#1a56db"),
+        "lblue":   colors.HexColor("#dbeafe"),
+        "lblue2":  colors.HexColor("#eff6ff"),
+        "teal":    colors.HexColor("#0e7490"),
+        "lteal":   colors.HexColor("#cffafe"),
+        "red":     colors.HexColor("#dc2626"),
+        "lred":    colors.HexColor("#fee2e2"),
+        "orange":  colors.HexColor("#d97706"),
+        "lorange": colors.HexColor("#fef3c7"),
+        "green":   colors.HexColor("#16a34a"),
+        "lgreen":  colors.HexColor("#dcfce7"),
+        "gray":    colors.HexColor("#374151"),
+        "lgray":   colors.HexColor("#f1f5f9"),
+        "lgray2":  colors.HexColor("#e2e8f0"),
+        "mgray":   colors.HexColor("#64748b"),
+        "dgray":   colors.HexColor("#475569"),
+        "white":   colors.white,
+    }
 
-    pi       = patient_info or {}
-    now      = datetime.now().strftime("%B %d, %Y  ·  %I:%M %p")
+    # ── Style factory ──────────────────────────
+    def S(name, **kw):
+        base = dict(fontName="Helvetica", fontSize=9, textColor=C["gray"], leading=13)
+        base.update(kw)
+        return ParagraphStyle(name, **base)
+
+    P  = lambda txt, st: Paragraph(txt, st)
+    HR = lambda: HRFlowable(width="100%", thickness=0.5, color=C["lgray2"], spaceAfter=5, spaceBefore=2)
+
+    now = datetime.now().strftime("%B %d, %Y  •  %I:%M %p")
+    pi  = patient_info or {}
+    W   = doc.width
+
+    story = []
+
+    # ══════════════════════════════════════════
+    # SECTION 0 — BRANDED HEADER
+    # ══════════════════════════════════════════
+    hdr_inner = Table([
+        [P("CardioXAI", S("h1", fontSize=22, fontName="Helvetica-Bold", textColor=C["white"], alignment=TA_LEFT)),
+         P("Heart Disease Risk Assessment Report", S("h2", fontSize=11, fontName="Helvetica", textColor=colors.HexColor("#93c5fd"), alignment=TA_LEFT))],
+    ], colWidths=[5.5*cm, W-5.5*cm])
+    hdr_inner.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"MIDDLE"),("TOPPADDING",(0,0),(-1,-1),2)]))
+
+    hdr = Table([[hdr_inner]], colWidths=[W])
+    hdr.setStyle(TableStyle([
+        ("BACKGROUND",(0,0),(-1,-1),C["navy"]),
+        ("ROWPADDING",(0,0),(-1,-1),14),
+    ]))
+    story.append(hdr)
+
+    # ── Meta bar ──────────────────────────────
+    meta = Table([[
+        P(f"<b>Patient:</b>  {pi.get('name','Anonymous Patient')}", S("m1", fontSize=8.5, textColor=C["navy"])),
+        P(f"<b>Age / Sex:</b>  {input_dict.get('age','—')} yrs  ·  {_sex_label(input_dict.get('sex',1))}", S("m2", fontSize=8.5, textColor=C["navy"])),
+        P(f"<b>Report Date:</b>  {now}", S("m3", fontSize=8.5, textColor=C["navy"])),
+        P("<b>Model:</b>  Logistic Regression + Linear SHAP", S("m4", fontSize=8.5, textColor=C["navy"])),
+    ]], colWidths=[W/4]*4)
+    meta.setStyle(TableStyle([
+        ("BACKGROUND",(0,0),(-1,-1),C["lblue"]),
+        ("ROWPADDING",(0,0),(-1,-1),8),
+        ("BOX",(0,0),(-1,-1),0.5,colors.HexColor("#93c5fd")),
+    ]))
+    story.append(meta)
+    story.append(Spacer(1, 0.35*cm))
+
+    # ══════════════════════════════════════════
+    # SECTION 1 — RISK VERDICT BANNER
+    # ══════════════════════════════════════════
     risk_pct = round(prob * 100, 1)
-    pat_name = pi.get("name", "Anonymous Patient")
-
     if prob > 0.7:
-        risk_label, risk_color, risk_bg, risk_icon = "HIGH RISK",     RED,    LRED,    "!"
+        rlabel, rcolor, rlcolor, rdesc = "HIGH RISK", C["red"], C["lred"], \
+            "Significant cardiovascular risk detected. Comprehensive cardiac evaluation strongly recommended."
     elif prob > 0.4:
-        risk_label, risk_color, risk_bg, risk_icon = "MODERATE RISK", ORANGE, LORANGE, "~"
+        rlabel, rcolor, rlcolor, rdesc = "MODERATE RISK", C["orange"], C["lorange"], \
+            "Moderate cardiovascular risk. Some clinical parameters warrant further diagnostic screening."
     else:
-        risk_label, risk_color, risk_bg, risk_icon = "LOW RISK",      GREEN,  LGREEN,  "✓"
+        rlabel, rcolor, rlcolor, rdesc = "LOW RISK", C["green"], C["lgreen"], \
+            "Low cardiovascular risk. Most indicators within safe physiological range."
 
-    # ── PAGE 1 ────────────────────────────────────────────────────────────
+    # Gauge-style probability bar
+    filled = int(risk_pct / 100 * 40)
+    bar_filled = "█" * filled
+    bar_empty  = "░" * (40 - filled)
 
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  HEADER BAND                                                         ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
-    HEADER_H = 72
-    filled_rect(cv, 0, H_pt - HEADER_H, W_pt, HEADER_H, NAVY)
+    verdict_left = Table([
+        [P(rlabel, S("rl", fontSize=20, fontName="Helvetica-Bold", textColor=C["white"]))],
+        [P(f"{risk_pct}% Probability", S("rp", fontSize=13, fontName="Helvetica-Bold", textColor=colors.HexColor("#fef9c3")))],
+        [P(rdesc, S("rd", fontSize=8.5, textColor=colors.HexColor("#fef9c3"), leading=13))],
+    ], colWidths=[8.5*cm])
+    verdict_left.setStyle(TableStyle([
+        ("BACKGROUND",(0,0),(-1,-1),rcolor),
+        ("ROWPADDING",(0,0),(-1,-1),7),
+        ("LEFTPADDING",(0,0),(-1,-1),14),
+    ]))
 
-    # Logo area — heart icon circle
-    cx_logo, cy_logo = ML + 22, H_pt - HEADER_H/2
-    cv.saveState()
-    cv.setFillColor(BLUE)
-    cv.circle(cx_logo, cy_logo, 18, stroke=0, fill=1)
-    cv.setFillColor(WHITE)
-    cv.setFont("Poppins-Bold", 16)
-    cv.drawCentredString(cx_logo, cy_logo - 6, "+")
-    cv.restoreState()
+    verdict_right = Table([
+        [P("<b>Risk Probability Gauge</b>", S("rg", fontSize=8, textColor=C["dgray"]))],
+        [P(f'<font color="#ef4444">{bar_filled}</font><font color="#d1d5db">{bar_empty}</font>',
+           S("bar", fontSize=7, fontName="Helvetica", leading=10))],
+        [P(f"0%{'':>18}50%{'':>18}100%", S("scale", fontSize=7, textColor=C["mgray"]))],
+        [P(f"<b>Model Accuracy:</b>  {metadata['lr_accuracy']*100:.1f}%    <b>AUC-ROC:</b>  {metadata['lr_auc']:.4f}",
+           S("ma", fontSize=8, textColor=C["dgray"]))],
+    ], colWidths=[W-8.5*cm])
+    verdict_right.setStyle(TableStyle([
+        ("BACKGROUND",(0,0),(-1,-1),rlcolor),
+        ("ROWPADDING",(0,0),(-1,-1),7),
+        ("LEFTPADDING",(0,0),(-1,-1),14),
+    ]))
 
-    draw_text(cv, cx_logo + 26, H_pt - 27, "CardioXAI", "Poppins-Bold", 17, WHITE)
-    draw_text(cv, cx_logo + 26, H_pt - 42, "Heart Disease Risk Assessment", "Poppins", 9, colors.HexColor("#93C5FD"))
-    draw_text(cv, cx_logo + 26, H_pt - 54, "Confidential Medical Report", "Poppins-Light", 7.5, colors.HexColor("#93C5FD"))
+    verdict = Table([[verdict_left, verdict_right]], colWidths=[8.5*cm, W-8.5*cm])
+    verdict.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),("INNERGRID",(0,0),(-1,-1),0,C["white"])]))
+    story.append(verdict)
+    story.append(Spacer(1, 0.45*cm))
 
-    # Right side — date / report ID
-    draw_text(cv, W_pt - MR, H_pt - 26, f"Report Date:  {now}", "Poppins", 7.5, colors.HexColor("#93C5FD"), align="right")
-    report_id = f"CXR-{datetime.now().strftime('%Y%m%d-%H%M')}"
-    draw_text(cv, W_pt - MR, H_pt - 39, f"Report ID:  {report_id}", "Poppins-Light", 7.5, colors.HexColor("#BFDBFE"), align="right")
-    draw_text(cv, W_pt - MR, H_pt - 52, "For Clinical Use Only", "Poppins-Italic", 7, colors.HexColor("#7CB9E8"), align="right")
+    # ══════════════════════════════════════════
+    # SECTION 2 — CLINICAL PARAMETERS (13 fields)
+    # ══════════════════════════════════════════
+    sec_s   = S("sec", fontSize=11, fontName="Helvetica-Bold", textColor=C["navy"], spaceBefore=6, spaceAfter=3)
+    lbl_s   = S("lbl", fontSize=8.5, fontName="Helvetica-Bold", textColor=C["navy"])
+    val_s   = S("val", fontSize=8.5, textColor=C["gray"])
+    tag_s   = S("tag", fontSize=7.5, fontName="Helvetica-Bold", textColor=C["mgray"])
 
-    # ── Patient info strip ────────────────────────────────────────────────
-    STRIP_Y = H_pt - HEADER_H - 28
-    filled_rect(cv, 0, STRIP_Y, W_pt, 28, LBLUE2)
-    hline(cv, 0, STRIP_Y, W_pt, LBLUE, 0.8)
-    hline(cv, 0, STRIP_Y + 28, W_pt, LBLUE, 0.8)
+    story.append(P("Clinical Input Parameters", sec_s))
+    story.append(HR())
 
-    fields_strip = [
-        ("PATIENT", pat_name),
-        ("AGE / SEX", f"{input_dict.get('age','—')} yrs  ·  {'Male' if int(input_dict.get('sex',1))==1 else 'Female'}"),
-        ("REFERRING PHYSICIAN", pi.get("physician", "Dr. A. Rahman MRCP")),
-        ("FACILITY", pi.get("facility", "City Cardiac Centre")),
-    ]
-    col_w = W_pt / 4
-    for i, (lbl, val) in enumerate(fields_strip):
-        cx = i * col_w + col_w / 2
-        draw_text(cv, cx, STRIP_Y + 17, lbl, "Poppins-Bold", 6.5, SLATE, align="center")
-        draw_text(cv, cx, STRIP_Y + 6,  val, "Poppins-SemiBold", 8, NAVY, align="center", max_width=col_w - 8)
-
-    Y = STRIP_Y - 16   # current draw position (top of content area)
-
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  RISK RESULT CARD                                                    ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
-    CARD_H = 82
-    filled_rect(cv, ML, Y - CARD_H, CW, CARD_H, risk_bg, radius=6, stroke_color=risk_color, stroke_width=0.8)
-
-    # Left: big risk label
-    filled_rect(cv, ML, Y - CARD_H, 120, CARD_H, risk_color, radius=6)
-    # Square off right side of left panel
-    filled_rect(cv, ML + 110, Y - CARD_H, 10, CARD_H, risk_color)
-    draw_text(cv, ML + 60, Y - 28, risk_label, "Poppins-Bold", 11.5, WHITE, align="center")
-    draw_text(cv, ML + 60, Y - 43, f"{risk_pct}%", "Poppins-Bold", 22, WHITE, align="center")
-    draw_text(cv, ML + 60, Y - 57, "Probability", "Poppins-Light", 8, colors.HexColor("#FECDD3" if prob > 0.7 else "#FEF3C7" if prob > 0.4 else "#BBF7D0"), align="center")
-
-    # Right: description + progress bar
-    RX = ML + 134
-    RW = CW - 134 - 12
-
-    if prob > 0.7:
-        verdict_text = "Significant cardiovascular risk detected. Multiple clinical risk factors are present. Urgent cardiology evaluation is strongly recommended."
-    elif prob > 0.4:
-        verdict_text = "Moderate cardiovascular risk detected. Some clinical parameters require further diagnostic screening and specialist review."
-    else:
-        verdict_text = "Low cardiovascular risk detected. Most clinical indicators are within safe physiological ranges. Continue preventive health practices."
-
-    draw_text(cv, RX, Y - 16, "ASSESSMENT RESULT", "Poppins-Bold", 7, SLATE)
-    draw_wrapped(cv, RX, Y - 27, verdict_text, "Poppins", 8.5, DTEXT, RW, 13, max_lines=3)
-    # Progress bar
-    BAR_Y = Y - CARD_H + 18
-    draw_text(cv, RX, BAR_Y + 10, "Risk Probability Gauge", "Poppins", 7, SLATE)
-    progress_bar(cv, RX, BAR_Y - 2, RW, 8, prob, risk_color, LGRAY2, radius=4)
-    draw_text(cv, RX, BAR_Y - 13, "0%", "Poppins-Light", 6.5, SLATE)
-    draw_text(cv, RX + RW/2, BAR_Y - 13, "50%", "Poppins-Light", 6.5, SLATE, align="center")
-    draw_text(cv, RX + RW, BAR_Y - 13, "100%", "Poppins-Light", 6.5, SLATE, align="right")
-
-    Y -= CARD_H + 18
-
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  13 CLINICAL PARAMETERS — 3-column grid                             ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
-    Y = section_header(cv, ML, Y, CW, "Clinical Input Parameters")
-    Y -= 8
-
+    # 13 fields in a 3-column card grid
     params = [
-        ("Age",               f"{input_dict['age']} years",                           "Demographics",  BLUE,   LBLUE),
-        ("Biological Sex",    "Male" if int(input_dict['sex'])==1 else "Female",       "Demographics",  BLUE,   LBLUE),
-        ("Chest Pain Type",   _cp_label(input_dict['cp']),                             "Symptoms",     colors.HexColor("#7C3AED"), colors.HexColor("#F5F3FF")),
-        ("Resting BP",        f"{input_dict['trestbps']} mm Hg",                      "Vitals",        TEAL,   LTEAL),
-        ("Serum Cholesterol", f"{input_dict['chol']} mg/dL",                           "Blood Labs",    ORANGE, LORANGE),
-        ("Fasting Blood Sugar",">120 mg/dL" if input_dict['fbs']==1 else "Normal (≤120 mg/dL)", "Blood Labs", ORANGE, LORANGE),
-        ("Resting ECG",       _restecg_label(input_dict['restecg']),                  "ECG",          colors.HexColor("#BE185D"), colors.HexColor("#FDF2F8")),
-        ("Max Heart Rate",    f"{input_dict['thalach']} bpm",                          "Stress Test",   RED,    LRED),
-        ("Exercise Angina",   "Present" if input_dict['exang']==1 else "Absent",       "Stress Test",   RED,    LRED),
-        ("ST Depression",     f"{input_dict['oldpeak']} mm",                           "Stress Test",   RED,    LRED),
-        ("ST Slope",          _slope_label(input_dict['slope']),                       "Stress Test",   RED,    LRED),
-        ("Major Vessels",     f"{int(input_dict['ca'])} vessel{'s' if int(input_dict['ca'])!=1 else ''}", "Angiography", GREEN, LGREEN),
-        ("Thalassemia",       _thal_label(input_dict['thal']),                         "MPI Scan",     colors.HexColor("#6D28D9"), colors.HexColor("#FAF5FF")),
+        ("Age",                   f"{input_dict['age']} years",          "Demographics"),
+        ("Biological Sex",        _sex_label(input_dict['sex']),          "Demographics"),
+        ("Chest Pain Type",       _cp_label(input_dict['cp']),            "Symptoms"),
+        ("Resting Blood Pressure",f"{input_dict['trestbps']} mm Hg",     "Vitals"),
+        ("Serum Cholesterol",     f"{input_dict['chol']} mg/dL",          "Blood Labs"),
+        ("Fasting Blood Sugar",   "Yes (>120)" if input_dict['fbs']==1 else "No (≤120)", "Blood Labs"),
+        ("Resting ECG",           _restecg_label(input_dict['restecg']), "ECG"),
+        ("Max Heart Rate",        f"{input_dict['thalach']} bpm",         "Stress Test"),
+        ("Exercise Angina",       "Yes" if input_dict['exang']==1 else "No", "Stress Test"),
+        ("ST Depression",         f"{input_dict['oldpeak']} mm",          "Stress Test"),
+        ("ST Segment Slope",      _slope_label(input_dict['slope']),      "Stress Test"),
+        ("Major Vessels (ca)",    str(int(input_dict['ca'])),             "Angiography"),
+        ("Thalassemia",           _thal_label(input_dict['thal']),        "Perfusion MPI"),
     ]
 
-    NCOLS   = 3
-    GAP     = 6
-    CARD_W  = (CW - GAP * (NCOLS - 1)) / NCOLS
-    CARD_PH = 52   # card height
+    TAG_COLORS = {
+        "Demographics": ("#1d4ed8","#eff6ff"),
+        "Symptoms":     ("#7c3aed","#f5f3ff"),
+        "Vitals":       ("#0e7490","#ecfeff"),
+        "Blood Labs":   ("#d97706","#fffbeb"),
+        "ECG":          ("#be185d","#fdf2f8"),
+        "Stress Test":  ("#dc2626","#fff1f2"),
+        "Angiography":  ("#065f46","#f0fdf4"),
+        "Perfusion MPI":("#6d28d9","#faf5ff"),
+    }
 
-    for idx, (label, value, source, accent, bg) in enumerate(params):
-        col = idx % NCOLS
-        row = idx // NCOLS
-        cx  = ML + col * (CARD_W + GAP)
-        cy  = Y - row * (CARD_PH + GAP)
+    # Build 3-column card rows
+    def make_param_card(label, value, tag):
+        tc, bc = TAG_COLORS.get(tag, ("#475569","#f8fafc"))
+        card = Table([
+            [P(f'<font color="{tc}"><b>{label}</b></font>',
+               S(f"pl{label}", fontSize=8, fontName="Helvetica-Bold", textColor=colors.HexColor(tc)))],
+            [P(f"<b>{value}</b>", S(f"pv{label}", fontSize=11, fontName="Helvetica-Bold", textColor=C["navy"]))],
+            [P(tag, S(f"pt{label}", fontSize=7, textColor=colors.HexColor(tc)))],
+        ], colWidths=[(W-0.6*cm)/3 - 0.3*cm])
+        card.setStyle(TableStyle([
+            ("BACKGROUND",(0,0),(-1,-1),colors.HexColor(bc)),
+            ("BOX",(0,0),(-1,-1),0.5,colors.HexColor(tc+"44" if len(tc)==7 else tc)),
+            ("ROWPADDING",(0,0),(-1,-1),5),
+            ("LEFTPADDING",(0,0),(-1,-1),8),
+            ("RIGHTPADDING",(0,0),(-1,-1),8),
+            ("TOPPADDING",(0,0),(0,0),8),
+            ("BOTTOMPADDING",(-1,-1),(-1,-1),8),
+        ]))
+        return card
 
-        # Card background
-        filled_rect(cv, cx, cy - CARD_PH, CARD_W, CARD_PH, bg, radius=5,
-                    stroke_color=colors.Color(accent.red, accent.green, accent.blue, alpha=0.3), stroke_width=0.6)
-        # Accent top bar
-        filled_rect(cv, cx, cy - 3, CARD_W, 3, accent, radius=2)
-        # Square off bottom of top bar
-        filled_rect(cv, cx, cy - 6, CARD_W, 3, accent)
+    col_w = (W - 0.4*cm) / 3
+    for row_start in range(0, 13, 3):
+        row_cards = params[row_start:row_start+3]
+        while len(row_cards) < 3:
+            row_cards.append(("","",""))
+        cells = [make_param_card(lbl, val, tag) if lbl else P("", val_s) for lbl,val,tag in row_cards]
+        row_t = Table([cells], colWidths=[col_w]*3)
+        row_t.setStyle(TableStyle([
+            ("VALIGN",(0,0),(-1,-1),"TOP"),
+            ("LEFTPADDING",(0,0),(-1,-1),3),
+            ("RIGHTPADDING",(0,0),(-1,-1),3),
+        ]))
+        story.append(row_t)
+        story.append(Spacer(1, 0.15*cm))
 
-        draw_text(cv, cx + 8, cy - 15, label.upper(), "Poppins-Bold", 6.5, accent, max_width=CARD_W - 16)
-        # Value — auto-shrink if long
-        val_size = 10 if len(value) < 16 else 8.5
-        draw_text(cv, cx + 8, cy - 28, value, "Poppins-SemiBold", val_size, DTEXT, max_width=CARD_W - 16)
-        # Source badge
-        badge_w = min(cv.stringWidth(source, "Poppins", 6) + 10, CARD_W - 16)
-        filled_rect(cv, cx + 8, cy - CARD_PH + 7, badge_w, 12,
-                    colors.Color(accent.red, accent.green, accent.blue, alpha=0.12), radius=3)
-        draw_text(cv, cx + 8 + badge_w/2, cy - CARD_PH + 12, source, "Poppins", 6,
-                  accent, align="center", max_width=badge_w - 4)
+    story.append(Spacer(1, 0.3*cm))
 
-    # Advance Y past the grid
-    NROWS = math.ceil(len(params) / NCOLS)
-    Y -= NROWS * (CARD_PH + GAP) + 14
+    # ══════════════════════════════════════════
+    # SECTION 3 — SHAP CHART
+    # ══════════════════════════════════════════
+    story.append(P("Explainable AI — Feature Impact Analysis (Linear SHAP)", sec_s))
+    story.append(HR())
 
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  SHAP CHART                                                          ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
-    if shap_chart_b64 and Y > 120:
-        Y = section_header(cv, ML, Y, CW, "Explainable AI — Feature Impact Analysis")
-        Y -= 8
-        chart_h = min(140, Y - 40)
-        if chart_h > 60:
-            img_buf = io.BytesIO(base64.b64decode(shap_chart_b64))
-            filled_rect(cv, ML, Y - chart_h - 4, CW, chart_h + 8, LGRAY, radius=4)
-            try:
-                from reportlab.platypus import Image as RLImage
-                img = RLImage(img_buf, width=CW - 16, height=chart_h)
-                img.drawOn(cv, ML + 8, Y - chart_h)
-            except Exception:
-                draw_text(cv, ML + CW/2, Y - chart_h/2, "[SHAP Chart]", "Poppins-Italic", 9, SLATE, align="center")
-            Y -= chart_h + 20
+    shap_intro = ("The chart below shows each clinical parameter's contribution to the predicted risk score. "
+                  "Red bars increase risk; green bars decrease risk. Values represent exact Linear SHAP "
+                  "decomposition of the logistic regression model coefficients.")
+    story.append(P(shap_intro, S("si", fontSize=8.5, textColor=C["dgray"], leading=13, spaceAfter=6)))
 
-    # If not enough room for factors, start new page
-    if Y < 200:
-        cv.showPage()
-        cv.setTitle("CardioXAI Heart Disease Risk Assessment Report")
-        # Mini header on page 2
-        filled_rect(cv, 0, H_pt - 32, W_pt, 32, NAVY)
-        draw_text(cv, ML, H_pt - 21, "CardioXAI — Heart Disease Risk Assessment Report (continued)", "Poppins-Bold", 9, WHITE)
-        draw_text(cv, W_pt - MR, H_pt - 21, f"{pat_name}  ·  {report_id}", "Poppins", 7.5, colors.HexColor("#93C5FD"), align="right")
-        Y = H_pt - 52
+    if shap_chart_b64:
+        img_buf   = io.BytesIO(base64.b64decode(shap_chart_b64))
+        chart_img = RLImage(img_buf, width=W*0.92, height=5.5*cm)
+        chart_wrap = Table([[chart_img]], colWidths=[W])
+        chart_wrap.setStyle(TableStyle([
+            ("ALIGN",(0,0),(-1,-1),"CENTER"),
+            ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#f8fafc")),
+            ("BOX",(0,0),(-1,-1),0.5,C["lgray2"]),
+            ("ROWPADDING",(0,0),(-1,-1),6),
+        ]))
+        story.append(chart_wrap)
+    story.append(Spacer(1, 0.4*cm))
 
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  RISK & PROTECTIVE FACTORS — side by side                           ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
+    # ══════════════════════════════════════════
+    # SECTION 4 — RISK & PROTECTIVE FACTORS
+    # ══════════════════════════════════════════
     rf_list = explanation.get("risk_factors", [])
     pf_list = explanation.get("protective_factors", [])
 
     if rf_list or pf_list:
-        Y = section_header(cv, ML, Y, CW, "Clinical Factors Driving the Prediction")
-        Y -= 12
+        story.append(P("Key Clinical Factors Driving the Prediction", sec_s))
+        story.append(HR())
 
-        COL_W  = CW / 2 - 5
-        LX, RX = ML, ML + CW / 2 + 5
+        # Two-column header
+        col_header = Table([
+            [P("▲  Risk-Elevating Factors", S("rfh", fontSize=9.5, fontName="Helvetica-Bold", textColor=C["red"])),
+             P("▼  Protective Factors",     S("pfh", fontSize=9.5, fontName="Helvetica-Bold", textColor=C["green"]))],
+        ], colWidths=[W/2 - 0.2*cm, W/2 - 0.2*cm])
+        col_header.setStyle(TableStyle([
+            ("BACKGROUND",(0,0),(0,0),C["lred"]),
+            ("BACKGROUND",(1,0),(1,0),C["lgreen"]),
+            ("ROWPADDING",(0,0),(-1,-1),7),
+            ("LEFTPADDING",(0,0),(-1,-1),10),
+            ("BOX",(0,0),(0,0),0.5,colors.HexColor("#fca5a5")),
+            ("BOX",(1,0),(1,0),0.5,colors.HexColor("#86efac")),
+        ]))
+        story.append(col_header)
+        story.append(Spacer(1, 0.12*cm))
 
-        # Column headers
-        filled_rect(cv, LX, Y - 22, COL_W, 22, LRED, radius=4,
-                    stroke_color=colors.HexColor("#FECACA"), stroke_width=0.6)
-        draw_text(cv, LX + COL_W/2, Y - 14, "Risk-Elevating Factors", "Poppins-Bold", 8.5, RED, align="center")
+        small_s = S("sm", fontSize=8, textColor=C["dgray"], leading=12)
+        imp_r_s = S("ir", fontSize=8, fontName="Helvetica-Bold", textColor=C["red"])
+        imp_g_s = S("ig", fontSize=8, fontName="Helvetica-Bold", textColor=C["green"])
 
-        filled_rect(cv, RX, Y - 22, COL_W, 22, LGREEN, radius=4,
-                    stroke_color=colors.HexColor("#86EFAC"), stroke_width=0.6)
-        draw_text(cv, RX + COL_W/2, Y - 14, "Protective Factors", "Poppins-Bold", 8.5, GREEN, align="center")
-        Y -= 28
-
-        ITEM_H = 52
         max_rows = max(len(rf_list), len(pf_list))
-
         for i in range(max_rows):
-            if Y - ITEM_H < 50:
-                cv.showPage()
-                filled_rect(cv, 0, H_pt - 32, W_pt, 32, NAVY)
-                draw_text(cv, ML, H_pt - 21, "CardioXAI — Heart Disease Risk Assessment Report (continued)", "Poppins-Bold", 9, WHITE)
-                draw_text(cv, W_pt - MR, H_pt - 21, f"{pat_name}  ·  {report_id}", "Poppins", 7.5, colors.HexColor("#93C5FD"), align="right")
-                Y = H_pt - 52
-                # Reprint column headers after page break
-                filled_rect(cv, LX, Y - 22, COL_W, 22, LRED, radius=4,
-                            stroke_color=colors.HexColor("#FECACA"), stroke_width=0.6)
-                draw_text(cv, LX + COL_W/2, Y - 14, "Risk-Elevating Factors", "Poppins-Bold", 8.5, RED, align="center")
-                filled_rect(cv, RX, Y - 22, COL_W, 22, LGREEN, radius=4,
-                            stroke_color=colors.HexColor("#86EFAC"), stroke_width=0.6)
-                draw_text(cv, RX + COL_W/2, Y - 14, "Protective Factors", "Poppins-Bold", 8.5, GREEN, align="center")
-                Y -= 28
+            rf_cell = pf_cell = P("", small_s)
 
-            # Risk factor card
             if i < len(rf_list):
-                f   = rf_list[i]
-                pct = round(abs(f["impact"]) * 100, 2)
-                filled_rect(cv, LX, Y - ITEM_H, COL_W, ITEM_H, LGRAY, radius=4,
-                            stroke_color=colors.HexColor("#FECACA"), stroke_width=0.5)
-                # Red accent strip left
-                filled_rect(cv, LX, Y - ITEM_H, 3, ITEM_H, RED, radius=2)
-                draw_text(cv, LX + 9, Y - 12, f["label"], "Poppins-Bold", 8.5, RED, max_width=COL_W - 60)
-                draw_text(cv, LX + COL_W - 5, Y - 12, f"+{pct}%", "Poppins-Bold", 8, RED, align="right")
-                draw_text(cv, LX + 9, Y - 23, f"Value: {f['value']}", "Poppins-SemiBold", 7.5, MTEXT, max_width=COL_W - 16)
-                draw_wrapped(cv, LX + 9, Y - 34, f.get("explanation",""), "Poppins", 7, MTEXT,
-                             COL_W - 16, 11, max_lines=2)
+                f = rf_list[i]
+                pct = round(abs(f["impact"])*100, 2)
+                rf_cell = Table([
+                    [P(f"<b>{f['label']}</b>  ·  {f['value']}",
+                       S(f"rl{i}", fontSize=8.5, fontName="Helvetica-Bold", textColor=C["red"])),
+                     P(f"+{pct}%", imp_r_s)],
+                    [P(f['explanation'], small_s), ""],
+                ], colWidths=[W/2 - 2.2*cm, 1.8*cm])
+                rf_cell.setStyle(TableStyle([
+                    ("SPAN",(0,1),(1,1)),
+                    ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#fff5f5")),
+                    ("ROWPADDING",(0,0),(-1,-1),5),("LEFTPADDING",(0,0),(-1,-1),8),
+                    ("BOX",(0,0),(-1,-1),0.3,colors.HexColor("#fca5a5")),
+                ]))
 
-            # Protective factor card
             if i < len(pf_list):
-                f   = pf_list[i]
-                pct = round(abs(f["impact"]) * 100, 2)
-                filled_rect(cv, RX, Y - ITEM_H, COL_W, ITEM_H, LGRAY, radius=4,
-                            stroke_color=colors.HexColor("#86EFAC"), stroke_width=0.5)
-                filled_rect(cv, RX, Y - ITEM_H, 3, ITEM_H, GREEN, radius=2)
-                draw_text(cv, RX + 9, Y - 12, f["label"], "Poppins-Bold", 8.5, GREEN, max_width=COL_W - 60)
-                draw_text(cv, RX + COL_W - 5, Y - 12, f"-{pct}%", "Poppins-Bold", 8, GREEN, align="right")
-                draw_text(cv, RX + 9, Y - 23, f"Value: {f['value']}", "Poppins-SemiBold", 7.5, MTEXT, max_width=COL_W - 16)
-                draw_wrapped(cv, RX + 9, Y - 34, f.get("explanation",""), "Poppins", 7, MTEXT,
-                             COL_W - 16, 11, max_lines=2)
+                f = pf_list[i]
+                pct = round(abs(f["impact"])*100, 2)
+                pf_cell = Table([
+                    [P(f"<b>{f['label']}</b>  ·  {f['value']}",
+                       S(f"pl{i}", fontSize=8.5, fontName="Helvetica-Bold", textColor=C["green"])),
+                     P(f"-{pct}%", imp_g_s)],
+                    [P(f['explanation'], small_s), ""],
+                ], colWidths=[W/2 - 2.2*cm, 1.8*cm])
+                pf_cell.setStyle(TableStyle([
+                    ("SPAN",(0,1),(1,1)),
+                    ("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#f0fdf4")),
+                    ("ROWPADDING",(0,0),(-1,-1),5),("LEFTPADDING",(0,0),(-1,-1),8),
+                    ("BOX",(0,0),(-1,-1),0.3,colors.HexColor("#86efac")),
+                ]))
 
-            Y -= ITEM_H + 6
+            row_t = Table([[rf_cell, pf_cell]], colWidths=[W/2, W/2])
+            row_t.setStyle(TableStyle([
+                ("VALIGN",(0,0),(-1,-1),"TOP"),
+                ("LEFTPADDING",(0,0),(-1,-1),2),
+                ("RIGHTPADDING",(0,0),(-1,-1),2),
+            ]))
+            story.append(row_t)
+            story.append(Spacer(1, 0.1*cm))
 
-    Y -= 8
+        story.append(Spacer(1, 0.35*cm))
 
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  OVERALL ASSESSMENT BOX                                              ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
-    if Y < 120:
-        cv.showPage()
-        filled_rect(cv, 0, H_pt - 32, W_pt, 32, NAVY)
-        draw_text(cv, ML, H_pt - 21, "CardioXAI — Heart Disease Risk Assessment Report (continued)", "Poppins-Bold", 9, WHITE)
-        draw_text(cv, W_pt - MR, H_pt - 21, f"{pat_name}  ·  {report_id}", "Poppins", 7.5, colors.HexColor("#93C5FD"), align="right")
-        Y = H_pt - 52
+    # ══════════════════════════════════════════
+    # SECTION 5 — OVERALL CLINICAL ASSESSMENT
+    # ══════════════════════════════════════════
+    story.append(P("Overall Clinical Assessment", sec_s))
+    story.append(HR())
 
-    Y = section_header(cv, ML, Y, CW, "Overall Clinical Assessment")
-    Y -= 10
+    assess_t = Table([[P(explanation.get("overall_assessment",""), S("oa", fontSize=9.5, textColor=C["gray"], leading=15, alignment=TA_JUSTIFY))]],
+                     colWidths=[W])
+    assess_t.setStyle(TableStyle([
+        ("BACKGROUND",(0,0),(-1,-1),C["lblue2"]),
+        ("ROWPADDING",(0,0),(-1,-1),12),
+        ("BOX",(0,0),(-1,-1),0.8,C["blue"]),
+        ("LEFTPADDING",(0,0),(-1,-1),14),
+        ("RIGHTPADDING",(0,0),(-1,-1),14),
+    ]))
+    story.append(assess_t)
+    story.append(Spacer(1, 0.4*cm))
 
-    overall = explanation.get("overall_assessment", "")
-    # Estimate height needed (approx 12pt per line, ~80 chars per line)
-    est_lines = max(2, math.ceil(len(overall) / 90))
-    ASSESS_H = est_lines * 13 + 20
-    filled_rect(cv, ML, Y - ASSESS_H, CW, ASSESS_H, LBLUE, radius=5,
-                stroke_color=BLUE, stroke_width=0.8)
-    filled_rect(cv, ML, Y - ASSESS_H, 4, ASSESS_H, BLUE, radius=2)
-    draw_wrapped(cv, ML + 12, Y - 12, overall, "Poppins", 9, DTEXT, CW - 24, 13)
-    Y -= ASSESS_H + 16
-
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  CLINICAL RECOMMENDATIONS TABLE                                      ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
-    if Y < 140:
-        cv.showPage()
-        filled_rect(cv, 0, H_pt - 32, W_pt, 32, NAVY)
-        draw_text(cv, ML, H_pt - 21, "CardioXAI — Heart Disease Risk Assessment Report (continued)", "Poppins-Bold", 9, WHITE)
-        draw_text(cv, W_pt - MR, H_pt - 21, f"{pat_name}  ·  {report_id}", "Poppins", 7.5, colors.HexColor("#93C5FD"), align="right")
-        Y = H_pt - 52
-
-    Y = section_header(cv, ML, Y, CW, "Clinical Recommendations")
-    Y -= 10
+    # ══════════════════════════════════════════
+    # SECTION 6 — RECOMMENDATIONS TABLE
+    # ══════════════════════════════════════════
+    story.append(P("Clinical Recommendations", sec_s))
+    story.append(HR())
 
     if prob > 0.7:
         recs = [
-            ("Urgent Cardiology Referral",   "Schedule consultation within 1–2 weeks for comprehensive cardiac evaluation."),
-            ("Coronary Imaging",             "Consider CCTA or invasive angiography based on clinical presentation."),
-            ("Medication Review",            "Optimise antiplatelet, statin, and antihypertensive pharmacotherapy."),
-            ("Cardiac Rehabilitation",       "Supervised rehabilitation program; low-fat diet; graded aerobic activity."),
-            ("Strict Risk Factor Control",   "Target BP <130/80 mmHg · LDL <70 mg/dL · Fasting glucose <100 mg/dL."),
+            ("Urgent Cardiology Referral",    "Schedule consultation within 1–2 weeks for comprehensive cardiac evaluation."),
+            ("Coronary Angiography",          "Consider invasive coronary evaluation based on stress test and imaging findings."),
+            ("Medication Optimisation",       "Review antiplatelet, statin, and antihypertensive therapy with prescribing physician."),
+            ("Lifestyle Modification",        "Structured cardiac rehabilitation, low-fat diet, aerobic activity as tolerated."),
+            ("Risk Factor Control",           "Target BP <130/80 mmHg, LDL <70 mg/dL, fasting glucose <100 mg/dL."),
         ]
     elif prob > 0.4:
         recs = [
-            ("Cardiology Consultation",      "Outpatient review within 4–6 weeks; risk stratification assessment."),
-            ("Diagnostic Workup",            "Stress ECG or echocardiogram for further cardiovascular evaluation."),
-            ("Lipid & BP Optimisation",      "Statin therapy review; target BP <130/80 mmHg."),
-            ("Lifestyle Modification",       "Mediterranean diet · 150 min/week aerobic exercise · smoking cessation."),
-            ("Follow-up Assessment",         "Repeat cardiovascular risk evaluation in 3–6 months."),
+            ("Cardiology Consultation",       "Outpatient cardiology review within 4–6 weeks recommended."),
+            ("Diagnostic Workup",             "Consider stress ECG or echocardiogram for further risk stratification."),
+            ("Lipid & BP Management",         "Optimise statin therapy; target BP <130/80 mmHg."),
+            ("Lifestyle Modification",        "Mediterranean diet, aerobic exercise 150 min/week, smoking cessation."),
+            ("Repeat Assessment",             "Repeat cardiovascular risk assessment in 3–6 months."),
         ]
     else:
         recs = [
-            ("Routine Annual Review",        "Annual cardiovascular risk assessment with primary care physician."),
-            ("Preventive Health Practices",  "Maintain healthy weight, regular exercise, and heart-healthy diet."),
-            ("Lipid & Glucose Monitoring",   "Repeat fasting lipid panel and glucose in 12 months."),
-            ("Blood Pressure Monitoring",    "Regular home BP monitoring; target <120/80 mmHg."),
-            ("Lifestyle Maintenance",        "Avoid smoking and excess alcohol; maintain current healthy practices."),
+            ("Routine Follow-up",             "Annual cardiovascular risk review with primary care physician."),
+            ("Preventive Health Practices",   "Maintain healthy weight, regular exercise, heart-healthy diet."),
+            ("Lipid & Glucose Monitoring",    "Repeat fasting lipid panel and glucose in 12 months."),
+            ("Blood Pressure Monitoring",     "Regular home BP monitoring; target <120/80 mmHg."),
+            ("Lifestyle Maintenance",         "Continue current healthy lifestyle; avoid smoking and excess alcohol."),
         ]
 
-    # Table header
-    ROW_H = 28
-    filled_rect(cv, ML, Y - ROW_H, CW, ROW_H, TEAL, radius=4)
-    # Square off bottom corners of header
-    filled_rect(cv, ML, Y - ROW_H, CW, 4, TEAL)
-    draw_text(cv, ML + 28, Y - 11, "#", "Poppins-Bold", 8, WHITE)
-    draw_text(cv, ML + 50, Y - 11, "Recommendation", "Poppins-Bold", 8, WHITE)
-    draw_text(cv, ML + 195, Y - 11, "Clinical Action", "Poppins-Bold", 8, WHITE)
-    Y -= ROW_H
+    rec_data = [["#", "Recommendation", "Action"]]
+    for idx, (title, detail) in enumerate(recs, 1):
+        rec_data.append([
+            P(f"<b>{idx}</b>", S(f"ri{idx}", fontSize=9, fontName="Helvetica-Bold", textColor=C["white"])),
+            P(f"<b>{title}</b>", S(f"rt{idx}", fontSize=8.5, fontName="Helvetica-Bold", textColor=C["navy"])),
+            P(detail, S(f"rd{idx}", fontSize=8.5, textColor=C["gray"], leading=13)),
+        ])
 
-    for idx, (title, detail) in enumerate(recs):
-        if Y - ROW_H < 50:
-            cv.showPage()
-            filled_rect(cv, 0, H_pt - 32, W_pt, 32, NAVY)
-            draw_text(cv, ML, H_pt - 21, "CardioXAI — Heart Disease Risk Assessment Report (continued)", "Poppins-Bold", 9, WHITE)
-            draw_text(cv, W_pt - MR, H_pt - 21, f"{pat_name}  ·  {report_id}", "Poppins", 7.5, colors.HexColor("#93C5FD"), align="right")
-            Y = H_pt - 52
+    rec_t = Table(rec_data, colWidths=[0.7*cm, 5*cm, W-5.7*cm])
+    rec_style = [
+        ("BACKGROUND",(0,0),(-1,0),C["teal"]),
+        ("TEXTCOLOR",(0,0),(-1,0),C["white"]),
+        ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+        ("FONTSIZE",(0,0),(-1,0),9),
+        ("ROWPADDING",(0,0),(-1,-1),7),
+        ("ROWBACKGROUNDS",(0,1),(-1,-1),[C["white"],C["lteal"]]),
+        ("GRID",(0,0),(-1,-1),0.3,C["lgray2"]),
+        ("VALIGN",(0,0),(-1,-1),"MIDDLE"),
+        ("ALIGN",(0,0),(0,-1),"CENTER"),
+    ]
+    for i in range(1, len(rec_data)):
+        rec_style.append(("BACKGROUND",(0,i),(0,i),C["teal"]))
+    rec_t.setStyle(TableStyle(rec_style))
+    story.append(rec_t)
+    story.append(Spacer(1, 0.4*cm))
 
-        bg = LGRAY if idx % 2 == 0 else WHITE
-        filled_rect(cv, ML, Y - ROW_H, CW, ROW_H, bg)
-        hline(cv, ML, Y - ROW_H, CW, LGRAY2, 0.4)
+    # ══════════════════════════════════════════
+    # SECTION 7 — MODEL INFORMATION
+    # ══════════════════════════════════════════
+    story.append(P("Model & Methodology Information", sec_s))
+    story.append(HR())
 
-        # Number badge
-        filled_rect(cv, ML + 10, Y - ROW_H + 7, 18, 18, TEAL, radius=3)
-        draw_text(cv, ML + 19, Y - ROW_H + 12, str(idx + 1), "Poppins-Bold", 8, WHITE, align="center")
+    model_data = [
+        ["Algorithm",      "Logistic Regression (scikit-learn)",   "Dataset",    "Cleveland Heart Disease (UCI ML Repository)"],
+        ["Training Size",  f"{metadata['n_samples']} samples",     "Accuracy",   f"{metadata['lr_accuracy']*100:.1f}%"],
+        ["AUC-ROC",        f"{metadata['lr_auc']:.4f}",            "XAI Method", "Linear SHAP (exact gradient decomposition)"],
+        ["Features Used",  "13 clinical parameters",               "Risk Cutoff","Probability > 50% = Positive prediction"],
+    ]
+    md_rows = []
+    for row in model_data:
+        md_rows.append([
+            P(f"<b>{row[0]}</b>", S(f"mk{row[0]}", fontSize=8.5, fontName="Helvetica-Bold", textColor=C["navy"])),
+            P(row[1], S(f"mv{row[0]}", fontSize=8.5, textColor=C["gray"])),
+            P(f"<b>{row[2]}</b>", S(f"mk2{row[0]}", fontSize=8.5, fontName="Helvetica-Bold", textColor=C["navy"])),
+            P(row[3], S(f"mv2{row[0]}", fontSize=8.5, textColor=C["gray"])),
+        ])
 
-        draw_text(cv, ML + 34, Y - 8, title, "Poppins-Bold", 8, NAVY, max_width=140)
-        draw_text(cv, ML + 34, Y - 19, detail, "Poppins", 7.5, MTEXT, max_width=140)
-        # Vertical divider
-        hline(cv, ML + 188, Y - ROW_H, 0, LGRAY2)
-        cv.saveState()
-        cv.setStrokeColor(LGRAY2)
-        cv.setLineWidth(0.4)
-        cv.line(ML + 188, Y, ML + 188, Y - ROW_H)
-        cv.restoreState()
-        draw_wrapped(cv, ML + 196, Y - 8, detail, "Poppins", 7.5, MTEXT, CW - 200, 11, max_lines=2)
-        # Overwrite title side with just the title (clean separation)
-        draw_text(cv, ML + 34, Y - 8, title, "Poppins-Bold", 8, NAVY, max_width=148)
-        cv.saveState()
-        cv.setFillColor(bg)
-        cv.rect(ML + 34, Y - 23, 148, 13, stroke=0, fill=1)
-        cv.restoreState()
+    md_t = Table(md_rows, colWidths=[3.5*cm, 5.5*cm, 3*cm, W-12*cm])
+    md_t.setStyle(TableStyle([
+        ("ROWPADDING",(0,0),(-1,-1),6),
+        ("ROWBACKGROUNDS",(0,0),(-1,-1),[C["white"],C["lgray"]]),
+        ("GRID",(0,0),(-1,-1),0.3,C["lgray2"]),
+        ("VALIGN",(0,0),(-1,-1),"MIDDLE"),
+    ]))
+    story.append(md_t)
+    story.append(Spacer(1, 0.35*cm))
 
-        Y -= ROW_H
+    # ══════════════════════════════════════════
+    # FOOTER — DISCLAIMER
+    # ══════════════════════════════════════════
+    disc_t = Table([[
+        P("⚠  Medical Disclaimer:  This report is generated by an AI-based predictive system for "
+          "informational and research purposes only. It does not constitute a clinical diagnosis "
+          "or medical advice. All predictions should be interpreted by a qualified healthcare "
+          "professional before any clinical decision is made.  |  "
+          f"Generated by CardioXAI  ·  {now}",
+          S("disc", fontSize=7.5, textColor=C["mgray"], leading=12, alignment=TA_JUSTIFY))
+    ]], colWidths=[W])
+    disc_t.setStyle(TableStyle([
+        ("BACKGROUND",(0,0),(-1,-1),C["lgray"]),
+        ("BOX",(0,0),(-1,-1),0.4,C["lgray2"]),
+        ("ROWPADDING",(0,0),(-1,-1),8),
+        ("LEFTPADDING",(0,0),(-1,-1),12),
+        ("RIGHTPADDING",(0,0),(-1,-1),12),
+    ]))
+    story.append(disc_t)
 
-    # Bottom border of table
-    hline(cv, ML, Y, CW, LGRAY2, 0.5)
-    Y -= 18
-
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  FOOTER / DISCLAIMER                                                 ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
-    if Y < 60:
-        cv.showPage()
-        Y = 80
-
-    FOOTER_H = 40
-    FOOTER_Y = max(20, Y - FOOTER_H - 8)
-    filled_rect(cv, 0, FOOTER_Y, W_pt, FOOTER_H, LGRAY)
-    hline(cv, 0, FOOTER_Y + FOOTER_H, W_pt, LGRAY2, 0.8)
-    disc = ("Medical Disclaimer: This report is generated by an AI-based predictive system for informational "
-            "purposes only. It does not constitute a clinical diagnosis or medical advice. "
-            "All findings must be interpreted by a qualified healthcare professional.")
-    draw_wrapped(cv, ML, FOOTER_Y + FOOTER_H - 8, disc, "Poppins-Italic", 7, SLATE, CW, 10, max_lines=2)
-    draw_text(cv, ML, FOOTER_Y + 8, f"CardioXAI  ·  {now}  ·  Confidential", "Poppins-Light", 6.5, SLATE)
-    draw_text(cv, W_pt - MR, FOOTER_Y + 8, f"Page 1  ·  {report_id}", "Poppins-Light", 6.5, SLATE, align="right")
-
-    cv.save()
+    doc.build(story)
     buf.seek(0)
     return base64.b64encode(buf.read()).decode("utf-8")
+
 
 # ──────────────────────────────────────────────
 # Auth Routes
@@ -1155,31 +1043,11 @@ def rag_extract():
             "content_type": request.content_type,
         }), 400
 
-    ALLOWED_EXT  = {"pdf", "docx", "doc"}
-    ALLOWED_MIME = {
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/msword",
-        "application/octet-stream",   # iOS sometimes sends this for PDFs
-    }
+    ALLOWED = {"pdf", "docx", "doc"}
     for f in uploaded:
-        fname    = f.filename or "report.pdf"
-        parts    = fname.lower().rsplit(".", 1)
-        ext      = parts[-1] if len(parts) > 1 else ""
-        mimetype = (f.content_type or "").lower().split(";")[0].strip()
-
-        valid_ext  = ext in ALLOWED_EXT
-        valid_mime = mimetype in ALLOWED_MIME
-
-        if not valid_ext and not valid_mime:
-            return jsonify({"error": f"Unsupported file: '{fname}'. Only PDF/DOCX allowed."}), 400
-
-        # If extension is missing, infer from MIME type so pdfplumber/docx picks correct parser
-        if not ext or ext not in ALLOWED_EXT:
-            if "pdf" in mimetype or "pdf" in fname:
-                f.filename = fname + ".pdf"
-            else:
-                f.filename = fname + ".docx"
+        ext = f.filename.lower().rsplit(".", 1)[-1]
+        if ext not in ALLOWED:
+            return jsonify({"error": f"Unsupported file: '{f.filename}'. Only PDF/DOCX allowed."}), 400
 
     try:
         per_report   = []   # results per file
