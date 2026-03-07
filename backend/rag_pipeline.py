@@ -23,10 +23,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ── Config ────────────────────────────────────
-GROQ_API_KEY = os.environ.get(
-    "GROQ_API_KEY",
-    "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"
-)
+GROQ_API_KEY = "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"
 GROQ_MODEL = "qwen/qwen3-32b"
 
 # ── Lazy singletons ───────────────────────────
