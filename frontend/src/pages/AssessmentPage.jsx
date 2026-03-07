@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
@@ -11,123 +11,6 @@ import {
 import { useAuth } from '../context/AuthContext'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-
-// ─── Plain-English tooltip text for each field ──────────────────────────────
-const FIELD_TOOLTIPS = {
-  age:      'Your age in years. Heart disease risk increases with age.',
-  sex:      'Your biological sex at birth. Males have a statistically higher risk of heart disease.',
-  cp:       'The type of chest pain you experience. Typical angina feels like pressure or squeezing; asymptomatic means no chest pain at all.',
-  trestbps: 'The pressure in your arteries when your heart is resting between beats. Normal is around 120 mm Hg. High values mean your heart is working harder than it should.',
-  chol:     'The total amount of cholesterol in your blood. High levels (above 200 mg/dL) can clog arteries over time.',
-  fbs:      'Your blood sugar level after not eating for at least 8 hours. A value above 120 mg/dL may indicate diabetes, which raises heart disease risk.',
-  restecg:  'A recording of your heart\'s electrical activity while you\'re at rest. Abnormalities can signal past damage or strain on the heart.',
-  thalach:  'The highest heart rate reached during an exercise test. A lower-than-expected max rate can indicate a heart problem.',
-  exang:    'Whether physical activity triggers chest pain or discomfort. If yes, it suggests the heart isn\'t getting enough blood during exertion.',
-  oldpeak:  'How much the ST segment of your ECG dips during exercise compared to rest. A bigger dip usually signals reduced blood flow to the heart.',
-  slope:    'The direction of the ST segment change during peak exercise on the ECG. Downsloping or flat patterns are more concerning than upsloping.',
-  ca:       'The number of major heart arteries with visible blockages on a dye-enhanced X-ray (fluoroscopy). More blocked vessels = higher risk.',
-  thal:     'Result from a nuclear scan showing blood flow in the heart. "Reversible defect" means blood flow is reduced during stress but recovers at rest.',
-}
-
-// ─── Tooltip Component ────────────────────────────────────────────────────────
-function FieldTooltip({ fieldKey }) {
-  const [open, setOpen] = useState(false)
-  const [offset, setOffset] = useState(0)   // horizontal correction in px
-  const btnRef     = useRef(null)
-  const tooltipRef = useRef(null)
-  const text = FIELD_TOOLTIPS[fieldKey]
-  if (!text) return null
-
-  // After tooltip mounts, check if it bleeds off-screen and shift it back in
-  const handleOpen = () => {
-    setOffset(0)
-    setOpen(o => !o)
-  }
-
-  // Run after paint whenever open changes
-  const recalc = () => {
-    if (!open || !tooltipRef.current || !btnRef.current) return
-    const tip   = tooltipRef.current.getBoundingClientRect()
-    const vw    = window.innerWidth
-    const PAD   = 8   // px from screen edge
-
-    let shift = 0
-    if (tip.left < PAD)            shift = PAD - tip.left          // too far left
-    if (tip.right > vw - PAD)      shift = (vw - PAD) - tip.right  // too far right
-    setOffset(shift)
-  }
-
-  // Recalc on every open (useEffect runs after render)
-  // We pass a no-dep callback ref trick via inline ref
-  const measureRef = (el) => {
-    tooltipRef.current = el
-    if (el) recalc()
-  }
-
-  return (
-    <span className="relative inline-flex items-center" style={{ verticalAlign: 'middle' }}>
-      <button
-        ref={btnRef}
-        type="button"
-        onClick={handleOpen}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
-        className="ml-1.5 w-4 h-4 rounded-full bg-slate-200 hover:bg-slate-700 text-slate-500 hover:text-white flex items-center justify-center transition-all duration-150 flex-shrink-0 focus:outline-none"
-        aria-label={`Info about ${fieldKey}`}
-      >
-        <span style={{ fontSize: '9px', fontWeight: 800, lineHeight: 1 }}>i</span>
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            ref={measureRef}
-            initial={{ opacity: 0, y: 4, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.97 }}
-            transition={{ duration: 0.13 }}
-            className="pointer-events-none"
-            style={{
-              position: 'fixed',         // fixed so it escapes overflow:hidden parents
-              zIndex: 9999,
-              width: '220px',
-              // Centre above the button, then apply edge-clamp offset
-              left: (() => {
-                if (!btnRef.current) return 0
-                const r = btnRef.current.getBoundingClientRect()
-                return r.left + r.width / 2 - 110 + offset   // 110 = half of 220px
-              })(),
-              bottom: (() => {
-                if (!btnRef.current) return 0
-                const r = btnRef.current.getBoundingClientRect()
-                return window.innerHeight - r.top + 8         // 8px gap above button
-              })(),
-            }}
-          >
-            <div
-              className="bg-gray-900 text-white rounded-lg px-3 py-2.5 shadow-2xl"
-              style={{ fontSize: '11px', lineHeight: '1.6', fontWeight: 400 }}
-            >
-              {text}
-              {/* Arrow — shifts opposite to the clamp offset so it always points at the icon */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '-6px',
-                  left: `calc(50% - ${offset}px)`,
-                  transform: 'translateX(-50%)',
-                  width: 0, height: 0,
-                  borderLeft: '6px solid transparent',
-                  borderRight: '6px solid transparent',
-                  borderTop: '7px solid #111827',
-                }}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </span>
-  )
-}
 
 // ─── Report type definitions ─────────────────────────────────────────────────
 const REPORT_TYPES = [
@@ -167,94 +50,9 @@ const ALL_FIELDS = Object.keys(FIELDS)
 const confColor = v => v===undefined?'bg-slate-200':v>=0.8?'bg-green-400':v>=0.5?'bg-yellow-400':'bg-red-300'
 const confLabel = v => v===undefined?'Unknown':v>=0.8?'High':v>=0.5?'Medium':'Default'
 
-// ─── Scanning Overlay ─────────────────────────────────────────────────────────
-const OVERLAY_WORDS = ['CardioXAI', 'Dil Se', 'Dil Tak', 'Reading…', 'Almost there']
-
-function ScanningOverlay() {
-  const [index, setIndex] = useState(0)
-
-  useEffect(() => {
-    const t = setInterval(() =>
-      setIndex(i => (i + 1) % OVERLAY_WORDS.length), 1800)
-    return () => clearInterval(t)
-  }, [])
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.4 }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9998,
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        background: 'rgba(6, 8, 24, 0.78)',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        gap: 32,
-      }}
-    >
-      {/* Pulsing heart dot */}
-      <motion.div
-        animate={{ scale: [1, 1.18, 1], opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          width: 12, height: 12, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-          boxShadow: '0 0 18px 6px rgba(168,85,247,0.45)',
-        }}
-      />
-
-      {/* Word display */}
-      <div style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={index}
-            initial={{ opacity: 0, y: 18, filter: 'blur(6px)' }}
-            animate={{ opacity: 1, y: 0,  filter: 'blur(0px)' }}
-            exit={{    opacity: 0, y: -18, filter: 'blur(6px)' }}
-            transition={{ duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] }}
-            style={{
-              fontSize: 'clamp(28px, 6vw, 42px)',
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              background: 'linear-gradient(135deg, #e2d9f3 0%, #a78bfa 50%, #818cf8 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              textAlign: 'center',
-              whiteSpace: 'nowrap',
-              userSelect: 'none',
-            }}
-          >
-            {OVERLAY_WORDS[index]}
-          </motion.p>
-        </AnimatePresence>
-      </div>
-
-      {/* Subtle loading bar */}
-      <div style={{
-        width: 120, height: 2,
-        background: 'rgba(255,255,255,0.08)',
-        borderRadius: 99, overflow: 'hidden',
-      }}>
-        <motion.div
-          animate={{ x: ['-100%', '100%'] }}
-          transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            width: '60%', height: '100%', borderRadius: 99,
-            background: 'linear-gradient(90deg, transparent, #a855f7, transparent)',
-          }}
-        />
-      </div>
-    </motion.div>
-  )
-}
-
 // ─── Multi-Report Upload Panel ────────────────────────────────────────────
 function MultiReportPanel({ onExtracted, onBack }) {
-  const [files,    setFiles]   = useState([])
+  const [files,    setFiles]   = useState([])   // [{file, id, status, result, error}]
   const [loading,  setLoading] = useState(false)
   const [error,    setError]   = useState('')
   const [preview,  setPreview] = useState(null)
@@ -267,10 +65,23 @@ function MultiReportPanel({ onExtracted, onBack }) {
   const addFiles = (newFiles) => {
     const valid = []
     for (const f of newFiles) {
-      const ext = f.name.toLowerCase().split('.').pop()
-      if (!ALLOWED.includes(ext)) { setError(`"${f.name}" is not a PDF or DOCX.`); continue }
-      if (f.size > 20*1024*1024)  { setError(`"${f.name}" exceeds 20 MB.`); continue }
-      valid.push({ file:f, id:nextId.current++, status:'pending', result:null, error:null })
+      // Check extension — on mobile filenames sometimes have no extension
+      const nameParts = f.name.toLowerCase().split('.')
+      const ext = nameParts.length > 1 ? nameParts.pop() : ''
+      // Also accept by MIME type — iOS Safari sends application/pdf even without .pdf extension
+      const ALLOWED_MIME = ['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/msword']
+      const validByExt  = ALLOWED.includes(ext)
+      const validByMime = ALLOWED_MIME.includes(f.type)
+      if (!validByExt && !validByMime) {
+        setError(`"${f.name}" is not a PDF or DOCX file.`)
+        continue
+      }
+      if (f.size > 20*1024*1024) { setError(`"${f.name}" exceeds 20 MB.`); continue }
+      // Ensure file always has a proper name with extension for the backend
+      const safeName = (ext && ALLOWED.includes(ext))
+        ? f.name
+        : f.name + (f.type === 'application/pdf' ? '.pdf' : '.docx')
+      valid.push({ file:f, safeName, id:nextId.current++, status:'pending', result:null, error:null })
     }
     setFiles(prev => [...prev, ...valid])
     setError('')
@@ -299,9 +110,16 @@ function MultiReportPanel({ onExtracted, onBack }) {
     setLoading(true); setError(''); setPreview(null)
     try {
       const fd = new FormData()
-      files.forEach(f => fd.append('files', f.file, f.file.name))
-      const res = await axios.post(`${API}/api/rag/extract`, fd, { timeout: 120000 })
+      // Always pass explicit filename as 3rd arg — critical for mobile browsers
+      // that send files without proper names or extensions
+      files.forEach(f => fd.append('files', f.file, f.safeName || f.file.name || 'report.pdf'))
+      // Do NOT set Content-Type manually — axios sets it with the correct
+      // multipart boundary automatically when FormData is the body
+      const res = await axios.post(`${API}/api/rag/extract`, fd, {
+        timeout: 120000,
+      })
       setPreview(res.data)
+      // Mark all files as done
       setFiles(prev => prev.map(f => ({ ...f, status:'done' })))
     } catch (e) {
       setError(e?.response?.data?.error || 'Extraction failed. Try again or use manual input.')
@@ -317,12 +135,6 @@ function MultiReportPanel({ onExtracted, onBack }) {
     : []
 
   return (
-    <>
-      {/* Full-screen scanning overlay */}
-      <AnimatePresence>
-        {loading && <ScanningOverlay />}
-      </AnimatePresence>
-
     <motion.div initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} className="space-y-5">
 
       {/* Report type guide */}
@@ -397,6 +209,7 @@ function MultiReportPanel({ onExtracted, onBack }) {
       {/* Extraction result */}
       {preview && (
         <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} className="space-y-4">
+          {/* Summary header */}
           <div className="flex items-center gap-2 p-4 bg-green-50 border border-green-200 rounded-xl">
             <CheckCircle2 size={20} className="text-green-500 flex-shrink-0"/>
             <div className="flex-1">
@@ -409,6 +222,7 @@ function MultiReportPanel({ onExtracted, onBack }) {
             </div>
           </div>
 
+          {/* Coverage bar */}
           <div>
             <div className="flex justify-between text-xs text-slate-500 mb-1">
               <span>Field coverage</span>
@@ -425,6 +239,7 @@ function MultiReportPanel({ onExtracted, onBack }) {
             )}
           </div>
 
+          {/* Per-report breakdown */}
           {preview.per_report?.length > 1 && (
             <div className="space-y-2">
               <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">Per-Report Results</p>
@@ -472,6 +287,7 @@ function MultiReportPanel({ onExtracted, onBack }) {
             </div>
           )}
 
+          {/* Merged values grid */}
           <div>
             <p className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">
               Merged Values (best confidence wins per field)
@@ -498,6 +314,7 @@ function MultiReportPanel({ onExtracted, onBack }) {
             </div>
           </div>
 
+          {/* Legend */}
           <div className="flex items-center gap-4 text-xs text-slate-400">
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 inline-block"/> High — found in report</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block"/> Medium — inferred</span>
@@ -518,7 +335,7 @@ function MultiReportPanel({ onExtracted, onBack }) {
             style={{background:loading?undefined:'linear-gradient(135deg,#7c3aed,#a855f7)'}}>
             {loading
               ? <><Loader size={16} className="animate-spin"/> Extracting {files.length} report{files.length>1?'s':''}…</>
-              : <><Sparkles size={16}/> Extract from Report{files.length!==1?'s':''}</>}
+              : <><Sparkles size={16}/> Extract from {files.length||'...'} Report{files.length!==1?'s':''}</>}
           </button>
         ) : (
           <button onClick={()=>onExtracted(preview)} className="btn btn-primary flex-1">
@@ -527,7 +344,6 @@ function MultiReportPanel({ onExtracted, onBack }) {
         )}
       </div>
     </motion.div>
-    </>
   )
 }
 
@@ -641,6 +457,11 @@ export default function AssessmentPage() {
                 <p className="text-xs text-slate-400">Upload 1–7 reports · AI extracts the right fields from each</p>
               </div>
             </div>
+            <div className="flex items-center justify-center gap-1 flex-wrap mb-5 p-3 bg-violet-50 rounded-xl border border-violet-100 text-[11px]">
+              {['Reports','→','TF-IDF Index','→','Retrieval','→','Groq Qwen','→','Merge','→','13 Values'].map((t,i)=>(
+                <span key={i} className={t==='→'?'text-violet-300 font-bold':'bg-white text-violet-700 font-semibold px-2 py-0.5 rounded-md border border-violet-100'}>{t}</span>
+              ))}
+            </div>
             <MultiReportPanel onExtracted={handleRAGExtracted} onBack={()=>setMode('select')}/>
           </div>
         )}
@@ -662,6 +483,13 @@ export default function AssessmentPage() {
                     <RotateCcw size={12}/> Reset
                   </button>
                 </div>
+                {ragMeta?.filenames?.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {ragMeta.filenames.map((fn,i)=>(
+                      <span key={i} className="text-[10px] bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded font-mono truncate max-w-[180px]">{fn}</span>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -689,23 +517,13 @@ export default function AssessmentPage() {
                     return (
                       <div key={key}>
                         <div className="flex items-center justify-between mb-1">
-                          {/* ── Label row with inline tooltip ── */}
-                          <label className="text-sm font-semibold text-slate-800 flex items-center gap-1">
+                          <label className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
                             {cfg.label}
-                            {rt && (
-                              <span
-                                className="text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold"
-                                style={{background:rt.color+'18', color:rt.color}}
-                              >
-                                {rt.id}
-                              </span>
-                            )}
-                            {/* ── Tooltip trigger ── */}
-                            <FieldTooltip fieldKey={key} />
+                            {rt && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold" style={{background:rt.color+'18',color:rt.color}}>{rt.id}</span>}
                           </label>
                           {cfg.unit && <span className="text-xs text-slate-400 font-mono">{cfg.unit}</span>}
                         </div>
-
+                        <p className="text-xs text-slate-400 mb-2.5 flex items-center gap-1"><Info size={11}/> {cfg.help}</p>
                         {cfg.type==='range' ? (
                           <div className="flex items-center gap-3">
                             <input type="range" min={cfg.min} max={cfg.max} step={cfg.step} value={form[key]}
