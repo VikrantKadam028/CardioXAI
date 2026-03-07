@@ -36,7 +36,7 @@ user authentication, and health tracking dashboard.
 </p>
 
 <p>
-<a href="https://cardioxai-frontend.onrender.com">
+<a href="https://www.cardio-xai.tech/">
   <img src="https://img.shields.io/badge/🚀_Live_Demo-Visit_Now-brightgreen?style=for-the-badge" alt="Live Demo" />
 </a>
 </p>
