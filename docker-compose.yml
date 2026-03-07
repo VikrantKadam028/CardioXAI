@@ -17,10 +17,12 @@ services:
     container_name: xai_backend
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "5000:10000"
     environment:
       - MONGO_URI=mongodb://mongodb:27017/
       - JWT_SECRET_KEY=your-super-secret-jwt-key-change-in-production
+      # ── RAG / Groq ──────────────────────────────────────
+      - GROQ_API_KEY=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
     depends_on:
       - mongodb
     networks:
