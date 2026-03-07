@@ -1,7 +1,12 @@
 <div align="center">
 
 <h1>CardioXAI — Explainable AI Heart Disease Prediction</h1>
-<h3>Clinical Decision Support with Transparent Machine Learning</h3>
+<h4>Clinical Decision Support with Transparent Machine Learning</h4>
+
+<div align = "center">
+  <img src="https://i.ibb.co/2YYYk3tk/cardioxai-white.png" name="cardioxai-logo" width="330px" height="auto">
+  <p>"Dil se, Dil tak"</p>
+</div>
 
 <p>
   <img src="https://img.shields.io/github/stars/VikrantKadam028/CardioXAI?style=social" />
