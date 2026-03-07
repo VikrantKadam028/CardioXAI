@@ -477,4 +477,3 @@ Always consult a qualified healthcare provider about any medical conditions or h
 
 Vishwakarma Institute of Technology, Pune • SY-AIDS • 2025-2026
 </div>
-```
