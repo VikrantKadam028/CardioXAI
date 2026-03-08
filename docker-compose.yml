@@ -19,7 +19,7 @@ services:
     ports:
       - "5000:10000"
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/
+      - MONGO_URI=${MONGO_URL}
       - JWT_SECRET_KEY=your-super-secret-jwt-key-change-in-production
       # ── RAG / Groq ──────────────────────────────────────
       - GROQ_API_KEY=${GROQ_API_KEY}
