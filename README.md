@@ -313,6 +313,13 @@ The SHAP values are computed using the exact linear SHAP decomposition. This is 
 3. Medical History — Baseline health metrics
 
 <hr/>
+## 🏗 System Architecture
+
+The CardioXAI platform follows a modular full-stack architecture consisting of a React frontend, Flask backend, machine learning model, and MongoDB database deployed using Docker.
+
+<p align="center">
+  <img src="docs/system-architecture.png" alt="CardioXAI System Architecture" width="850"/>
+</p>
 
 ## 📡 API Endpoints
 
