@@ -84,7 +84,7 @@ const teamMembers = [
     email: 'pranali.yelavikar25@vit.edu',
     github: 'https://github.com/pranaliyelavikar14',
     linkedin: 'https://www.linkedin.com/in/pranali-yelavikar-2b3178383/',
-    image: 'https://avatars.githubusercontent.com/u/235873957',
+    image: 'https://media.licdn.com/dms/image/v2/D4E03AQHfIoFibBhVIA/profile-displayphoto-scale_400_400/B4EZqwcW3eKUAg-/0/1763896816362?e=1774483200&v=beta&t=YnNS5W0gCU8alDq7uufwd8Rgi0C3UYg0MPAY2lqvljA',
     avatar: 'PY',
     color: 'from-amber-500 to-orange-500'
   },
