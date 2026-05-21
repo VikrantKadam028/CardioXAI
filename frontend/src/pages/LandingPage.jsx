@@ -153,7 +153,7 @@ export default function LandingPage() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
             className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-10 text-xs text-slate-400"
           >
-            {['No credit card required', 'HIPAA-conscious design', 'Real AI explainability'].map(t => (
+            {['HIPAA-conscious design', 'Real AI explainability'].map(t => (
               <span key={t} className="flex items-center gap-1.5">
                 <CheckCircle size={13} className="text-green-500" /> {t}
               </span>
